@@ -3,7 +3,7 @@ title: "人才智库系统 执行任务拆解 (tasks.md)"
 description: "基于 spec.md v2.24.0（confirmed）与 plan.md v3.21.0 的原子化、有依赖、TDD 顺序、可直接执行的任务清单"
 author: "TDD/SDD 架构师（AI）起草"
 created: "2026-11-26"
-version: "1.4.0"
+version: "1.5.2"
 status: "草案（待评审）"
 category: "tasks"
 tags: ["人才智库", "任务拆解", "TDD", "微服务", "追溯"]
@@ -12,6 +12,9 @@ tags: ["人才智库", "任务拆解", "TDD", "微服务", "追溯"]
 # 人才智库系统 执行任务拆解 (tasks.md)
 
 > 依据：`spec.md` v2.24.0（confirmed）> `plan.md` v3.21.0 > `constitution.md` v3.2 > `AGENTS.md` v3.2。
+> v1.5.2 变更（2026-11-27）：**数据表三次压缩（C2~C5，用户裁决）同步**——db-design v1.16.0：`job_family_correction`→`quality_process_log`（issue_type=CORRECTION）、`review_opinion`→`report.review_opinions_json`（并补 `review_progress_json` 承载展示性进度）、`annual_key_conclusion`→`achievement_ledger`（item_kind）、`tag_pending_item`→`tag_change_log`（SUGGESTION 行+item_status）；**表 34→30、实体 33→29、关系 19→17**；AC-13/63/61/64/07 行为不变，专家评审仍为展示性、不做流程引擎。
+> v1.5.1 变更（2026-11-27）：**数据表二次压缩（C1，用户裁决）同步**——db-design v1.15.0：`model_route_policy` 并入 `model_config`（route_role / route_trigger_json / route_enabled，主备唯一性与启停由应用层校验）；**表 35→34、实体 34→33，关系保持 19**。REQ-68/AC-70 行为不变，T111/T112 任务内容无需调整。
+> v1.5.0 变更（2026-11-27）：**数据库表数量压缩（方案 B，用户裁决）同步**——db-design v1.14.0：role 常量化（代码常量 + CK-23 校验）；login_audit/field_mapping/collect_run/review_progress 分别并入 operation_log/import_task/import_task/adjustment_window；两张标签同步表合并为 tag_sync、两张技能点标签链合并为 skill_point_tag_link；**表 42→35、实体 40→34、关系 22→19**（编号留空不重排）。任务侧同步 T024（登录审计落 operation_log，log_type=LOGIN）；字段映射/采集执行/评审进度相关任务以 `import_task.mapping_json` / `import_task` 采集字段 / `adjustment_window.review_stages_json` 为准。
 > v1.4.0 变更（2026-11-27）：**按标准 AI 提示词对齐**——导入映射采用标准 15 字段字典与标准输出适配；必填字段改为公司名称/岗位名称/工作地点/发布日期，行业文件优先/缺省企业确认，技能由 JD 抽取；建议类型统一“课程内容”，AI 输出采用 recommendedType/level/title/desc/accordingTo；同步 T062/T063、T074~T077、T082/T083、T092/T093、T100/T101、T108、T207/T209/T210、T213、T215/T216。
 > v1.3.0 变更（2026-11-27）：**冗余表清理与口径收敛**——删除 field_mapping_cache（映射缓存走 Redis）、account_data_scope（取消“指定专业数据”范围）、permission/role_permission（权限点与角色授权代码常量）；T029/T030/T031 同步；并消除 `global/search` 重复职责（T055/T056 仅通知/数据同步状态，搜索统一归 T274/T275）；任务数与 AC 数不变。
 > v1.2.1 变更（2026-11-27）：**导入来源字段口径**——必填字段=公司名称/岗位名称/工作城市/发布日期；行业分类不由文件提供（按企业行业匹配/人工确认并回写）；技能要求可选（AI 从岗位描述抽取）；同步 T062/T063、T074/T075、T076/T077、T082/T083、T092/T093、T100/T101、T108。
@@ -39,11 +42,11 @@ tags: ["人才智库", "任务拆解", "TDD", "微服务", "追溯"]
 
 ### 0.3 工作目录确认
 
-- **工程布局（已确认，用户裁决 2026-11-26）**：前后端同一仓库；后端 Maven 多模块集中于同一文件夹（模块化，仓库根聚合 `pom.xml` + 六模块）；前端根目录 **`frontend/`**；Java 基包名 **`com.xjy`**（任务中 `<pkg>` 即 `com/xjy`，各服务包路径 `com.xjy.<service>`）：
+- **工程布局（已确认，用户裁决 2026-11-26；目录收纳 2026-11-27 用户裁决）**：前后端同一仓库；后端 Maven 多模块集中于同一大文件夹 **`backend/`**（`backend/pom.xml` 聚合 + 六模块，本文件后续所有后端相对路径均以 `backend/` 为根）；前端根目录 **`frontend/`**；Java 基包名 **`com.xjy`**（任务中 `<pkg>` 即 `com/xjy`，各服务包路径 `com.xjy.<service>`）：
   - 后端 Maven 模块（plan §2.3）：`gateway-service/`、`user-service/`、`ai-service/`、`data-service/`、`curriculum-service/`、`common/`、聚合 `pom.xml`。
   - 各服务内部分层（plan §2.3）：`<service>/src/main/java/<pkg>/<service>/controller|service|mapper|model|config|client`。
   - 前端（plan §2.3）：`frontend/src/api|stores|views|components|composables|types`。
-- 表结构参考 `db-design.md` v1.13.0（已确认，四库分域）：Entity/Mapper 对齐该文档表名与字段，但它不是业务规则来源（constitution §1.2）。
+- 表结构参考 `db-design.md` v1.16.0（已确认，四库分域、30 张有效表，2026-11-27 方案 B + C1 + C2~C5 表压缩）：Entity/Mapper 对齐该文档表名与字段，但它不是业务规则来源（constitution §1.2）。
 
 ### 0.4 前后端边界确认
 
@@ -128,7 +131,7 @@ tags: ["人才智库", "任务拆解", "TDD", "微服务", "追溯"]
 ### 1.3 用户域（登录/账号/RBAC/审计）
 
 - [ ] T023 [REQ-01] [AC-01] [AC-02] [Phase 1] [Size: M] 编写登录 Service 表格驱动测试：凭据正确签发 JWT 进角色默认功能（AC-01）、凭据错误显式提示且不建会话（AC-02）、停用账号拒绝并显式提示（UH-01）、记住我长效 token。 依赖：T008。 文件：`user-service/src/test/java/<pkg>/service/AuthServiceTest.java`。 验证：JUnit5 表格驱动全绿。 完成判据：测试方法名引用 AC 编号（如 `ac02_wrongCredential_noSession`），4 类输入全覆盖。 来源：`spec.md#REQ-01, AC-01, AC-02`；`plan.md#1.2 UH-01`。
-- [ ] T024 [REQ-01] [AC-01] [AC-02] [Phase 1] [Size: S] 实现登录 Service（通过 T023）：凭据校验、登录审计记录、JWT 签发。 依赖：T023。 文件：`user-service/src/main/java/<pkg>/service/AuthService.java`。 验证：T023 全绿。 完成判据：失败不签发 token，登录行为落 login_audit（含未知账号尝试）。 来源：同 T023；`db-design.md`（sys_account/login_audit）。
+- [ ] T024 [REQ-01] [AC-01] [AC-02] [Phase 1] [Size: S] 实现登录 Service（通过 T023）：凭据校验、登录审计记录、JWT 签发。 依赖：T023。 文件：`user-service/src/main/java/<pkg>/service/AuthService.java`。 验证：T023 全绿。 完成判据：失败不签发 token，登录行为落 operation_log（log_type=LOGIN，含未知账号尝试）。 来源：同 T023；`db-design.md`（sys_account/operation_log）。
 - [ ] T025 [REQ-01] [AC-01] [AC-02] [Phase 1] [Size: S] [P] 编写 auth API 契约测试：`POST /api/v1/auth/login`（400/401）、`POST /api/v1/auth/logout`（401）、`GET /api/v1/auth/me`（user+permissionPoints）。 依赖：T024。 文件：`user-service/src/test/java/<pkg>/controller/AuthControllerTest.java`。 验证：MockMvc 全绿，断言与 plan §3.2 Response 字段一致。 完成判据：登录失败响应显式 message，不建立会话。 来源：`plan.md#3.2 user-service 接口表`；`spec.md#REQ-01`。
 - [ ] T026 [REQ-01] [AC-01] [AC-02] [Phase 1] [Size: S] 实现 AuthController（通过 T025）。 依赖：T025。 文件：`user-service/src/main/java/<pkg>/controller/AuthController.java`。 验证：T025 全绿。 完成判据：接口路径/入参/响应与 plan §3.2 一致，无业务逻辑下沉 Controller。 来源：同 T025。
 - [ ] T027 [REQ-02] [AC-65] [AC-73] [Phase 1] [Size: M] 编写账号管理测试（Service 表格驱动 + API 契约）：创建字段=姓名、登录账号(account_name)、初始密码、工号/统一认证账号(仅展示)、所属部门、所在城市、角色、数据范围、权限说明（AccountCreateCmd v2.7，CF-05 同步；密码创建入口=系统设置→新建系统账户，用户裁决 2026-11-26）；新增即刻生效启用；密码规则 8 位以上含字母数字；停用立即禁止访问并清会话；强制下线；所在城市为看板【本地】判定依据（AC-73）。 依赖：T024。 文件：`user-service/src/test/java/<pkg>/service/AccountServiceTest.java`、`user-service/src/test/java/<pkg>/controller/AccountControllerTest.java`。 验证：测试全绿，AC-65/AC-73 用例名直引编号。 完成判据：创建/维护/停用/重置/强制下线全链路断言齐备，停用即刻 401 有断言。 来源：`spec.md#REQ-02, AC-65, AC-73`（v2.5）；`plan.md#3.2 AccountCreateCmd`（v2.7 用户裁决）。
@@ -538,6 +541,9 @@ tags: ["人才智库", "任务拆解", "TDD", "微服务", "追溯"]
 | 导入字段口径（v1.2.1，**已被 v1.4.0 标准提示词口径取代**） | 来源文件字段与必填/行业/技能规则 | 原口径：必填=公司名称/岗位名称/工作城市/发布日期；行业不由文件提供；技能可选。**现行口径见下一行** | T062/T063、T074~T077、T082/T083、T092/T093、T100/T101、T108 |
 | 标准提示词对齐（v1.4.0） | 导入映射与建议输出 | 必填=**公司名称/岗位名称/工作地点/发布日期**；**行业文件优先、缺省企业匹配/确认**；**技能不映射、AI 从 JD 抽取**；导入采用标准 15 字段字典与标准输出适配；建议类型统一“课程内容”，AI 输出 recommendedType/level/title/desc/accordingTo | T062/T063、T074~T077、T082/T083、T092/T093、T100/T101、T108、T207/T209/T210、T213、T215/T216 |
 | 冗余表清理（v1.3.0） | field_mapping_cache、account_data_scope、permission、role_permission | **四张全部删除**：映射缓存统一 Redis；数据范围收敛为全校/只读/全系统；权限点与角色授权改代码常量、矩阵只读；db-design 表 46→42、实体 42→40、关系 24→22 | T029、T030、T031 |
+| 表数量压缩（v1.5.0，db-design v1.14.0） | role、login_audit、field_mapping、collect_run、review_progress、std_tag_sync/industry_tag_sync、两张技能点标签链 | **净减 7 张**：role 常量化；login_audit→operation_log；field_mapping→import_task.mapping_json；collect_run→import_task 采集字段；review_progress→adjustment_window.review_stages_json；两张标签同步表→tag_sync；两张链→skill_point_tag_link；**表 42→35、实体 40→34、关系 22→19**，编号留空不重排 | T024、T062/T063、T074~T077、T082/T083、T092/T093、T100/T101、采集任务组、评审窗口任务组 |
+| 路由策略字段化（v1.5.1，db-design v1.15.0） | model_route_policy | **并入 model_config**（route_role/route_trigger_json/route_enabled）；主备唯一性与启停由应用层校验，回落/切回留痕仍写操作日志；**表 35→34、实体 34→33，关系保持 19**；REQ-68/AC-70 不变 | T111、T112 |
+| 表数量三次压缩（v1.5.2，db-design v1.16.0） | job_family_correction、review_opinion、annual_key_conclusion、tag_pending_item | **净减 4 张**：岗位族校正→quality_process_log（CORRECTION 行）；评审意见→report.review_opinions_json（另补 review_progress_json）；年度结论→achievement_ledger（item_kind）；标签待处理→tag_change_log（SUGGESTION 行）；**表 34→30、实体 33→29、关系 19→17**；AC-13/63/61/64/07 不变 | T139/T140（岗位族校正）、标签治理任务组（§3.3）、报告与成果任务组（§7.1） |
 
 > **REQ-72 已细化并落地任务（2026-11-26，spec v2.22 / plan v3.19 AD-18）**：人才需求预测=统计时序模型（移动平均/指数平滑/线性回归，可组合），输入历史月度岗位需求（有效职位），支持区域/行业/岗位族筛选，输出下一季度+下一年预测值、趋势方向与增长提示，回测 MAPE≤20%；数据不足显式；结果落 data_db `prediction_result`；任务见 T304~T309，验收 AC-98。预警口径=现有趋势增长提示+配额预警（新兴技能预警仍不实现）；项目案例/实践资源为系统外交付物（项目资源下载仍不实现）。
 

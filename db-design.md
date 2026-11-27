@@ -4,7 +4,7 @@ description: "基于 spec.md v2.22 的数据模型设计：四库分域（user_d
 author: "数据库架构师（AI）产出，用户逐轮交互裁决确认"
 created: "2026-11-24"
 updated: "2026-11-27"
-version: "1.13.0"
+version: "1.16.0"
 status: "已确认（结构化设计总结草案经用户确认后生成）"
 category: "db-design"
 tags: ["人才智库", "数据库设计", "MySQL", "数据模型", "追溯矩阵"]
@@ -27,7 +27,7 @@ tags: ["人才智库", "数据库设计", "MySQL", "数据模型", "追溯矩阵
 | 日期 | 2026-11-24 |
 | 关联需求文档版本 | `spec.md` v2.24.0（confirmed，2026-11-27）；`plan.md` v3.21.0（架构上下文） |
 | 收敛过程 | 3 轮交互：R1 前置确认与候选实体识别；R2 判重/对齐/生命周期/索引依据裁决（Q5~Q7）；R3 结构化设计总结草案确认 |
-| 变更记录 | v1.13.0（2026-11-27）：**按标准 AI 提示词对齐（spec v2.24）**——①job_record 新增标准字典原文保留字段：age_requirement/language_requirement/job_type/major_requirement/gender_requirement/recruitment_req（均 NULL）；②标准字段别名：industry→industry_category、salary→salary_raw、workLocation→work_city、jd→job_text；③建议类型 COURSE_ADJUST→**COURSE_CONTENT（课程内容）**；④H-19 更新（行业文件优先、技能不映射），新增 H-21（标准提示词契约适配），计数不变。v1.12.0（2026-11-27）：**冗余表清理与口径收敛（spec v2.23）**——①删除 `field_mapping_cache`（ENTITY-13/TABLE-15/UQ-03/INDEX-11）：映射缓存统一走 Redis；②删除 `account_data_scope`（TABLE-05/REL-03/FK-04）：数据范围收敛为全校/只读汇总/全系统，取消“指定专业数据”；③删除 `permission`/`role_permission`（ENTITY-03/TABLE-03/04/REL-02/FK-02/03）：权限点与角色授权改为代码常量、矩阵只读；④计数 42 实体/24 关系/46 表 → **40 实体/22 关系/42 表（含 2 张关联表）**；⑤CK-03/DataScope 去 MAJOR，新增 H-20/R-DB-07。v1.11.1（2026-11-27）：**导入来源字段口径（spec v2.22.1）**——①job_record.skill_requirement 改为可空（无则由 AI 从岗位描述抽取）；②job_record.industry_category 改为可空并按 `company.industry` 回填（企业行业未确认不入正式表）；③新增 H-19（行业来源/技能可选）；④修正 INDEX-02 字段名 city→work_city。v1.11（2026-11-26）：**收尾口径冻结同步 spec v2.22 / plan v3.19**——①**删除 sys_param**（ENTITY-28/TABLE-31/UQ-08/H-07 废止）：参数配置改为系统内页面经 Nacos OpenAPI 读写（AD-17），不建通用参数表；②新增**人才需求预测结果表** prediction_result（ENTITY-43/TABLE-46、INDEX-41，REQ-72/AC-98）：预测值/趋势方向/增长提示/MAPE/模型版本/生成时间/筛选与周期；③补枚举 PredictionModelType/PredictionPeriodType/TrendDirection；④质量评分分母更新为正式表全部记录（H-11）；⑤目标企业清单改为全量替换、历史版本不留存（H-15）；⑥OPEN-DB-02/03/04 关闭、OPEN-03 冻结关闭；⑦计数保持 42 实体/24 关系/46 表（删 1 加 1）；⑧H-12 手工补录批次按日聚合（OPEN-DB-05 关闭）；⑨任务调度/备份恢复为占位权限点（17 项不变、无功能入口）。v1.10（2026-11-26）：**全量对齐 spec v2.21**——①**软数智云标记改为企业级**：从 job_record 移至 company（REQ-56/术语表），新增 CK-16；②新增**目标企业清单表** target_company（TABLE-45，REQ-31/GAP-03）；③采集/清洗表编号冲突修正并纳入实体清单：collect_task/collect_run/clean_rule/quality_process_log → TABLE-41~44、ENTITY-37~40；④复核单补 ENTITY-42/CK-17/FK-26~27；⑤新增 UQ-12、INDEX-37~40、CK-18；⑥枚举补 RoleCode/AiCollabType/Approval*/Collect*/IssueType/ReportFormat；⑦更新 H-03/H-07/H-11/H-12，新增 H-14~H-16、OPEN-DB-02~04、CF-06~07；⑧计数修正为 42 实体/24 关系/46 表；⑨分库命名 curriculum-service。v1.9（2026-11-26）：看板岗位需求明细口径同步（spec v2.20）——改名「岗位需求明细」、全部聚合岗位按需求量降序、不做紧缺指数/状态（仅看板范围）；INDEX-06/P-06 索引说明同步（无表结构变更）。v1.8（2026-11-26）：AI 协同岗位结构卡口径同步（spec v2.19）——job_record 新增 `ai_collab_type`（AI 应用开发/AI 辅助测试·运维；AI_COLLAB 打标同时输出，非协同为 NULL，INV-04 禁人工修正）；新增 CK-15；BR-02 补子类。v1.2（2026-11-24）：job_record 扩展岗位属性（用户裁决）——新增所在区域 district、工作地址 work_address、学历要求 education_requirement、工作年限 work_experience、福利 benefits（均非必填可空，导入原文保留）；salary_raw/job_text 说明文案对齐"待遇/岗位描述"。v1.1（2026-11-24）：系统账号表修订（用户裁决）——表名 account→sys_account；新增 account_name 为登录凭证（唯一）；工号/统一认证账号仅展示（撤销唯一约束）；密码字段=password_hash；login_audit 增记登录尝试账号名（未知账号登录失败 account_id 为 NULL）；新增 H-13、CF-05 |
+| 变更记录 | v1.16.0（2026-11-27）：**表数量三次压缩（C2~C5，用户裁决）**——①`job_family_correction` 并入 `quality_process_log`（issue_type=CORRECTION + ref_job_id + payload_json；删 TABLE-17/ENTITY-29/FK-09/REL-18）；②`review_opinion` 并入 `report.review_opinions_json`（删 TABLE-28/ENTITY-25/FK-19/REL-16），并补 `report.review_progress_json` 承载四级流程/专家人数/意见截止/查看情况；③`annual_key_conclusion` 并入 `achievement_ledger`（item_kind=ACHIEVEMENT/CONCLUSION；删 TABLE-30/ENTITY-27）；④`tag_pending_item` 并入 `tag_change_log`（change_type=SUGGESTION/SUGGESTION_IGNORED + item_status；删 TABLE-23/ENTITY-20）。计数：33→**29 实体**、19→**17 关系**、34→**30 表**；验收行为不变（AC-13/63/61/64/07），编号留空不重排。v1.15.0（2026-11-27）：**表数量二次压缩（C1，用户裁决）**——`model_route_policy` 并入 `model_config`（新增 `route_role`/`route_trigger_json`/`route_enabled`，CK-27；删 TABLE-09/ENTITY-07/FK-14/15）；主备唯一性与启停由应用层校验，回落/切回留痕仍写操作日志（AC-70）；REQ-68 业务行为不变。计数：34→**33 实体**、关系保持 **19**（REL-17 仍覆盖配额/调用诊断）、35→**34 表**；编号留空不重排。v1.14.0（2026-11-27）：**表数量压缩（方案 B，用户裁决）**——①`role` 改代码常量（删 TABLE-02/ENTITY-02/FK-01/REL-01，新增 CK-23）；②`login_audit` 并入 `operation_log`（新增 log_type/account_name/login_result/client_info，account_id/employee_no 放宽可空；删 TABLE-07/ENTITY-05，INDEX-25 改指 operation_log）；③`std_tag_sync`+`industry_tag_sync` → `tag_sync(tag_kind)`（ENTITY-33 扩展，删 TABLE-36/ENTITY-34）；④两张技能点标签链 → `skill_point_tag_link`（TABLE-37 吸收 TABLE-38，删 REL-14/FK-24/25）；⑤`collect_run` 并入 `import_task`（新增 collect_task_id/fetched_bytes/collect_status，删 TABLE-42/ENTITY-38/REL-23/LR-07）；⑥`field_mapping` 并入 `import_task.mapping_json`（+version 乐观锁，删 TABLE-14/ENTITY-12/FK-06/INDEX-10）；⑦`review_progress` 并入 `adjustment_window.review_stages_json`（删 TABLE-26/ENTITY-23/FK-18）。计数：42→**35 表**、40→**34 实体**、22→**19 关系**；表/实体编号留空不重排。v1.13.0（2026-11-27）：**按标准 AI 提示词对齐（spec v2.24）**——①job_record 新增标准字典原文保留字段：age_requirement/language_requirement/job_type/major_requirement/gender_requirement/recruitment_req（均 NULL）；②标准字段别名：industry→industry_category、salary→salary_raw、workLocation→work_city、jd→job_text；③建议类型 COURSE_ADJUST→**COURSE_CONTENT（课程内容）**；④H-19 更新（行业文件优先、技能不映射），新增 H-21（标准提示词契约适配），计数不变。v1.12.0（2026-11-27）：**冗余表清理与口径收敛（spec v2.23）**——①删除 `field_mapping_cache`（ENTITY-13/TABLE-15/UQ-03/INDEX-11）：映射缓存统一走 Redis；②删除 `account_data_scope`（TABLE-05/REL-03/FK-04）：数据范围收敛为全校/只读汇总/全系统，取消“指定专业数据”；③删除 `permission`/`role_permission`（ENTITY-03/TABLE-03/04/REL-02/FK-02/03）：权限点与角色授权改为代码常量、矩阵只读；④计数 42 实体/24 关系/46 表 → **40 实体/22 关系/42 表（含 2 张关联表）**；⑤CK-03/DataScope 去 MAJOR，新增 H-20/R-DB-07。v1.11.1（2026-11-27）：**导入来源字段口径（spec v2.22.1）**——①job_record.skill_requirement 改为可空（无则由 AI 从岗位描述抽取）；②job_record.industry_category 改为可空并按 `company.industry` 回填（企业行业未确认不入正式表）；③新增 H-19（行业来源/技能可选）；④修正 INDEX-02 字段名 city→work_city。v1.11（2026-11-26）：**收尾口径冻结同步 spec v2.22 / plan v3.19**——①**删除 sys_param**（ENTITY-28/TABLE-31/UQ-08/H-07 废止）：参数配置改为系统内页面经 Nacos OpenAPI 读写（AD-17），不建通用参数表；②新增**人才需求预测结果表** prediction_result（ENTITY-43/TABLE-46、INDEX-41，REQ-72/AC-98）：预测值/趋势方向/增长提示/MAPE/模型版本/生成时间/筛选与周期；③补枚举 PredictionModelType/PredictionPeriodType/TrendDirection；④质量评分分母更新为正式表全部记录（H-11）；⑤目标企业清单改为全量替换、历史版本不留存（H-15）；⑥OPEN-DB-02/03/04 关闭、OPEN-03 冻结关闭；⑦计数保持 42 实体/24 关系/46 表（删 1 加 1）；⑧H-12 手工补录批次按日聚合（OPEN-DB-05 关闭）；⑨任务调度/备份恢复为占位权限点（17 项不变、无功能入口）。v1.10（2026-11-26）：**全量对齐 spec v2.21**——①**软数智云标记改为企业级**：从 job_record 移至 company（REQ-56/术语表），新增 CK-16；②新增**目标企业清单表** target_company（TABLE-45，REQ-31/GAP-03）；③采集/清洗表编号冲突修正并纳入实体清单：collect_task/collect_run/clean_rule/quality_process_log → TABLE-41~44、ENTITY-37~40；④复核单补 ENTITY-42/CK-17/FK-26~27；⑤新增 UQ-12、INDEX-37~40、CK-18；⑥枚举补 RoleCode/AiCollabType/Approval*/Collect*/IssueType/ReportFormat；⑦更新 H-03/H-07/H-11/H-12，新增 H-14~H-16、OPEN-DB-02~04、CF-06~07；⑧计数修正为 42 实体/24 关系/46 表；⑨分库命名 curriculum-service。v1.9（2026-11-26）：看板岗位需求明细口径同步（spec v2.20）——改名「岗位需求明细」、全部聚合岗位按需求量降序、不做紧缺指数/状态（仅看板范围）；INDEX-06/P-06 索引说明同步（无表结构变更）。v1.8（2026-11-26）：AI 协同岗位结构卡口径同步（spec v2.19）——job_record 新增 `ai_collab_type`（AI 应用开发/AI 辅助测试·运维；AI_COLLAB 打标同时输出，非协同为 NULL，INV-04 禁人工修正）；新增 CK-15；BR-02 补子类。v1.2（2026-11-24）：job_record 扩展岗位属性（用户裁决）——新增所在区域 district、工作地址 work_address、学历要求 education_requirement、工作年限 work_experience、福利 benefits（均非必填可空，导入原文保留）；salary_raw/job_text 说明文案对齐"待遇/岗位描述"。v1.1（2026-11-24）：系统账号表修订（用户裁决）——表名 account→sys_account；新增 account_name 为登录凭证（唯一）；工号/统一认证账号仅展示（撤销唯一约束）；密码字段=password_hash；login_audit 增记登录尝试账号名（未知账号登录失败 account_id 为 NULL）；新增 H-13、CF-05 |
 
 ---
 
@@ -60,7 +60,7 @@ tags: ["人才智库", "数据库设计", "MySQL", "数据模型", "追溯矩阵
 | 业务键 | 承载业务唯一性的列或列组合（如任务编码、工号、标签编码），以唯一约束强制 |
 | 自然键 | 来自业务现实的标识（如企业公司名称），非系统生成 |
 | 逻辑外键 | 跨库/多态引用，数据库层不建 FK，以应用层校验 + 事件同步维护（`LR-*` 编号） |
-| 同步副本 | 跨库数据一致性方案：目标库存放源数据副本，由变更事件（RocketMQ）维护（如 `std_tag_sync`） |
+| 同步副本 | 跨库数据一致性方案：目标库存放源数据副本，由变更事件（RocketMQ）维护（如 `tag_sync`） |
 | 只增表 | 仅允许 INSERT、禁止 UPDATE/DELETE 的表（INV-03），以写入口隔离实现 |
 | 标记字段 | 承载业务标记的布尔/枚举列（如 duplicate_flag）；部分标记禁止人工修正（INV-04） |
 | 口径 | 统计计算规则（去重、时间归属、有效性判定），随索引与查询设计一并追溯 |
@@ -79,14 +79,14 @@ tags: ["人才智库", "数据库设计", "MySQL", "数据模型", "追溯矩阵
 | 岗位族 | `job_record.job_family`（3 类枚举可空，CK-04） |
 | AI 协同岗位 | `job_record.ai_collab_flag` + `ai_collab_type`（子类：AI 应用开发/AI 辅助测试·运维，INV-04 无人工修正入口） |
 | 软数智云 | **企业级标记** `company.soft_digital_cloud_flag`（REQ-56/术语表，v1.10 由 job_record 迁入；INV-04 无人工修正入口） |
-| 采集任务 / 增量更新 | `collect_task`（TABLE-41）/ `collect_run`（TABLE-42）；仅模板与文件拉取，无爬虫（REQ-75） |
+| 采集任务 / 增量更新 | `collect_task`（TABLE-41）/ `import_task` 采集执行字段（TABLE-12，v1.14 合并原 collect_run）；仅模板与文件拉取，无爬虫（REQ-75） |
 | 处理台账 | `quality_process_log`（TABLE-44，REQ-76） |
 | 【软数智云】目标企业清单 | `target_company`（TABLE-45；目标企业覆盖率分母，Excel 导入维护，REQ-31/GAP-03） |
 | 原始标签 / 抽取标签 | `job_tag.tag_source` = IMPORTED / EXTRACTED（INV-03 只增） |
 | 标准技能标签 | `std_skill_tag`（TABLE-20，归属 data_db，用户裁决） |
-| 产业技能标签 | 岗位侧技能标签（`job_tag` 派生口径），课程侧经 `industry_tag_sync`（TABLE-36）同步副本对齐（REQ-53、Q4） |
+| 产业技能标签 | 岗位侧技能标签（`job_tag` 派生口径），课程侧经 `tag_sync`（TABLE-35，tag_kind=INDUSTRY）同步副本对齐（REQ-53、Q4） |
 | 知识图谱 / 覆盖率 | `skill_point_industry_tag_link`（TABLE-38）单向口径：被技能点关联的产业技能标签数 ÷ 产业技能标签总数（OPEN-07） |
-| 字段映射 | `field_mapping`（TABLE-14）；映射缓存走 **Redis**（不建 `field_mapping_cache` 表，v1.12） |
+| 字段映射 | `import_task.mapping_json`（TABLE-12，v1.14 合并原 field_mapping）；映射缓存走 **Redis**（不建 `field_mapping_cache` 表，v1.12） |
 | 专业调整建议（ADJ-*） | `adjustment_suggestion`（TABLE-24） |
 | 报告（RPT-*） | `report`（TABLE-27，文件存本地磁盘） |
 | 系统账号 / 登录账号 | `sys_account`（TABLE-01）；登录凭证=account_name（唯一），工号/统一认证账号仅做展示（用户裁决，CF-05） |
@@ -112,15 +112,13 @@ tags: ["人才智库", "数据库设计", "MySQL", "数据模型", "追溯矩阵
 
 ### 5.1 ERD 描述
 
-系统共 40 个实体、22 条关系、42 张有效表（含 2 张关联表）。按四个数据库分域（v1.12：删除 field_mapping_cache/account_data_scope/permission/role_permission，sys_param 废止不计入）：
+系统共 29 个实体、17 条关系、30 张有效表（含 1 张关联表）。按四个数据库分域（v1.12：删除 field_mapping_cache/account_data_scope/permission/role_permission，sys_param 废止不计入；v1.14：角色常量化，login_audit/field_mapping/collect_run/review_progress 分别并入 operation_log/import_task/import_task/adjustment_window，两张标签同步表与两张技能点标签链各合并为一张；v1.15：model_route_policy 并入 model_config；v1.16：岗位族校正/评审意见/年度结论/标签待处理分别并入质量台账/报告/年度台账/标签变更流水）：
 
 **user_db（账号与审计域）**
 
 ```mermaid
 erDiagram
-    ROLE ||--o{ SYS_ACCOUNT : "拥有(REL-01)"
-    SYS_ACCOUNT ||--o{ OPERATION_LOG : "产生"
-    SYS_ACCOUNT ||--o{ LOGIN_AUDIT : "产生"
+    SYS_ACCOUNT ||--o{ OPERATION_LOG : "产生(操作/登录审计)"
     SYS_ACCOUNT ||--o{ KEY_OPERATION_APPROVAL : "提交/复核(REL-21)"
 ```
 
@@ -128,7 +126,6 @@ erDiagram
 
 ```mermaid
 erDiagram
-    MODEL_CONFIG ||--o{ MODEL_ROUTE_POLICY : "主备路由(REL-17)"
     MODEL_CONFIG ||--o{ MODEL_QUOTA : "配额(REL-17)"
     MODEL_CONFIG ||--o{ AI_CALL_LOG : "调用诊断(REL-17)"
 ```
@@ -139,17 +136,12 @@ erDiagram
 erDiagram
     IMPORT_TASK ||--o{ JOB_RECORD : "批次(REL-04)"
     IMPORT_TASK ||--o{ IMPORT_TEMP_RECORD : "临时行(REL-05)"
-    IMPORT_TASK ||--o{ FIELD_MAPPING : "字段映射"
     COMPANY ||--o{ JOB_RECORD : "归属(REL-06)"
     JOB_RECORD ||--o{ JOB_TAG : "标签(REL-07)"
-    JOB_RECORD ||--o{ JOB_FAMILY_CORRECTION : "岗位族校正(REL-18)"
     JOB_RECORD ||--o{ JOB_RECORD : "重复指向(REL-10 自引用)"
     JOB_TAG }o--|| STD_SKILL_TAG : "映射(REL-08)"
     STD_SKILL_TAG ||--o{ STD_SKILL_TAG : "合并指向(REL-09 自引用)"
-    ADJUSTMENT_WINDOW ||--o{ REVIEW_PROGRESS : "评审进度(FK-18)"
-    REPORT ||--o{ REVIEW_OPINION : "评审意见(REL-16)"
-    COLLECT_TASK ||--o{ COLLECT_RUN : "执行(REL-22)"
-    COLLECT_RUN }o..|| IMPORT_TASK : "生成(REL-23 逻辑)"
+    COLLECT_TASK ||--o{ IMPORT_TASK : "采集执行(REL-22)"
     CLEAN_RULE ||--o{ QUALITY_PROCESS_LOG : "约束(REL-24 逻辑)"
 ```
 
@@ -159,11 +151,10 @@ erDiagram
 erDiagram
     COURSE_SYSTEM ||--o{ COURSE : "包含(REL-11)"
     COURSE ||--o{ SKILL_POINT : "包含(REL-12)"
-    SKILL_POINT }o--o{ STD_TAG_SYNC : "标准标签链(REL-13)"
-    SKILL_POINT }o--o{ INDUSTRY_TAG_SYNC : "产业标签链(REL-14)"
+    SKILL_POINT }o--o{ TAG_SYNC : "技能点标签链(REL-13，tag_kind 区分)"
 ```
 
-**跨库关系（无 FK）**：`std_skill_tag → std_tag_sync`（REL-19 事件同步）、`产业技能标签 → industry_tag_sync`（REL-20，REQ-53 同步）、`adjustment_suggestion → course_system`（REL-15 逻辑引用）。  
+**跨库关系（无 FK）**：`std_skill_tag → tag_sync(tag_kind=STD)`（REL-19 事件同步）、`产业技能标签 → tag_sync(tag_kind=INDUSTRY)`（REL-20，REQ-53 同步）、`adjustment_suggestion → course_system`（REL-15 逻辑引用）。  
 **清单匹配关系（无 FK）**：`target_company.company_name` 与 `company.company_name` 按名称匹配计算目标企业覆盖率（名称归一规则同判重 Q3；v1.10）。
 
 ### 5.2 核心实体清单（ENTITY-*）
@@ -171,17 +162,17 @@ erDiagram
 | 编号 | 实体 | 表 | 库 | 来源 |
 | --- | --- | --- | --- | --- |
 | ENTITY-01 | 系统账号 | sys_account | user_db | REQ-01/02、用户裁决（CF-05） |
-| ENTITY-02 | 角色 | role | user_db | REQ-63 |
+| ~~ENTITY-02~~ | ~~角色~~（**已废止，v1.14**） | ~~role~~（角色改代码常量，CK-23 校验） | — | REQ-63 |
 | ENTITY-03 | ~~权限点~~（**已废止，v1.12**） | ~~permission~~ | —（权限点为代码常量） | 原 REQ-63；v2.23 裁决改为内置固定配置 |
 | ENTITY-04 | 操作日志 | operation_log | user_db | REQ-24/64 |
-| ENTITY-05 | 登录审计 | login_audit | user_db | REQ-24 |
+| ~~ENTITY-05~~ | ~~登录审计~~（**已废止，v1.14**） | ~~login_audit~~（并入 ENTITY-04 operation_log，log_type=LOGIN） | — | REQ-24 |
 | ENTITY-06 | AI 大模型配置 | model_config | ai_db | REQ-67 |
-| ENTITY-07 | 模型路由策略 | model_route_policy | ai_db | REQ-68 |
+| ~~ENTITY-07~~ | ~~模型路由策略~~（**已废止，v1.15**） | ~~model_route_policy~~（并入 ENTITY-06 model_config 路由字段） | — | REQ-68 |
 | ENTITY-08 | 模型用量配额 | model_quota | ai_db | REQ-69 |
 | ENTITY-09 | AI 调用诊断 | ai_call_log | ai_db | INV-07/REQ-10 |
 | ENTITY-10 | 导入任务 | import_task | data_db | REQ-03/06/55 |
 | ENTITY-11 | 导入临时数据 | import_temp_record | data_db | REQ-05、INV-08 |
-| ENTITY-12 | 字段映射 | field_mapping | data_db | REQ-04 |
+| ~~ENTITY-12~~ | ~~字段映射~~（**已废止，v1.14**） | ~~field_mapping~~（并入 ENTITY-10 import_task.mapping_json） | — | REQ-04 |
 | ENTITY-13 | ~~字段映射缓存~~（**已废止，v1.12**） | ~~field_mapping_cache~~ | —（缓存走 Redis） | 原 REQ-04；v2.23 裁决 |
 | ENTITY-14 | 岗位/招聘需求 | job_record | data_db | REQ-05/06、OPEN-04、H-01 |
 | ENTITY-15 | 企业 | company | data_db | REQ-28/31/56、H-04 |
@@ -189,25 +180,25 @@ erDiagram
 | ENTITY-17 | 标准技能标签 | std_skill_tag | data_db | REQ-07 |
 | ENTITY-18 | 标签映射与校正 | tag_mapping | data_db | REQ-08 |
 | ENTITY-19 | 标签变更/合并记录 | tag_change_log | data_db | REQ-07、AC-67 |
-| ENTITY-20 | 标签待处理事项 | tag_pending_item | data_db | REQ-07 |
+| ~~ENTITY-20~~ | ~~标签待处理事项~~（**已废止，v1.16**） | ~~tag_pending_item~~（并入 ENTITY-19 tag_change_log，change_type=SUGGESTION） | — | REQ-07 |
 | ENTITY-21 | 专业调整建议 | adjustment_suggestion | data_db | REQ-19~21、INV-05 |
 | ENTITY-22 | 调整窗口 | adjustment_window | data_db | REQ-49 |
-| ENTITY-23 | 评审进度 | review_progress | data_db | REQ-49、C-11 |
+| ~~ENTITY-23~~ | ~~评审进度~~（**已废止，v1.14**） | ~~review_progress~~（并入 ENTITY-22 adjustment_window.review_stages_json） | — | REQ-49、C-11 |
 | ENTITY-24 | 报告 | report | data_db | REQ-26/58 |
-| ENTITY-25 | 外部评审意见 | review_opinion | data_db | REQ-61、T-21 |
+| ~~ENTITY-25~~ | ~~外部评审意见~~（**已废止，v1.16**） | ~~review_opinion~~（并入 ENTITY-24 report.review_opinions_json） | — | REQ-61、T-21 |
 | ENTITY-26 | 年度建设成果台账 | achievement_ledger | data_db | REQ-62 |
-| ENTITY-27 | 年度关键结论 | annual_key_conclusion | data_db | REQ-59 |
+| ~~ENTITY-27~~ | ~~年度关键结论~~（**已废止，v1.16**） | ~~annual_key_conclusion~~（并入 ENTITY-26 achievement_ledger，item_kind=CONCLUSION） | — | REQ-59 |
 | ENTITY-28 | ~~系统参数~~（**已废止，v1.11**） | ~~sys_param~~ | —（参数走 Nacos，不建表） | 原 plan.md GAP-01、H-07（废止）；v2.22 裁决改 Nacos（AD-17） |
-| ENTITY-29 | 岗位族人工校正留痕 | job_family_correction | data_db | REQ-11、AC-13、H-03 |
+| ~~ENTITY-29~~ | ~~岗位族人工校正留痕~~（**已废止，v1.16**） | ~~job_family_correction~~（并入 ENTITY-40 quality_process_log，issue_type=CORRECTION） | — | REQ-11、AC-13、H-03 |
 | ENTITY-30 | 课程体系 | course_system | curriculum_db | REQ-16 |
 | ENTITY-31 | 课程 | course | curriculum_db | REQ-17 |
 | ENTITY-32 | 知识技能点 | skill_point | curriculum_db | REQ-18 |
-| ENTITY-33 | 标准技能标签同步副本 | std_tag_sync | curriculum_db | Q4、AC-67、H-09 |
-| ENTITY-34 | 产业技能标签同步副本 | industry_tag_sync | curriculum_db | REQ-53、Q4 |
+| ENTITY-33 | 技能标签同步副本（tag_kind 区分标准/产业） | tag_sync | curriculum_db | Q4、AC-67、REQ-53、H-09（v1.14 合并） |
+| ~~ENTITY-34~~ | ~~产业技能标签同步副本~~（**已废止，v1.14**） | ~~industry_tag_sync~~（并入 ENTITY-33 tag_sync，tag_kind=INDUSTRY） | — | REQ-53、Q4 |
 | ENTITY-35 | 课程变更记录 | course_change_log | curriculum_db | REQ-16/17 |
 | ENTITY-36 | 技能变化更新提示 | update_hint | curriculum_db | REQ-54、ASM-16 |
 | ENTITY-37 | 采集任务 | collect_task（TABLE-41） | data_db | REQ-75、AC-93 |
-| ENTITY-38 | 采集执行记录 | collect_run（TABLE-42） | data_db | REQ-75、AC-93 |
+| ~~ENTITY-38~~ | ~~采集执行记录~~（**已废止，v1.14**） | ~~collect_run~~（并入 ENTITY-10 import_task 采集执行字段） | — | REQ-75、AC-93 |
 | ENTITY-39 | 清洗规则 | clean_rule（TABLE-43） | data_db | REQ-76、AC-94 |
 | ENTITY-40 | 质量处理台账 | quality_process_log（TABLE-44） | data_db | REQ-76、AC-94 |
 | ENTITY-41 | 【软数智云】目标企业清单 | target_company（TABLE-45） | data_db | REQ-31、GAP-03 |
@@ -218,7 +209,7 @@ erDiagram
 
 | 编号 | 关系 | 基数 | 实现 | 来源 |
 | --- | --- | --- | --- | --- |
-| REL-01 | 系统账号 → 角色 | N:1 | FK（TABLE-01.role_code） | REQ-02/63 |
+| ~~REL-01~~ | ~~系统账号 → 角色~~（**已废止，v1.14**） | — | 角色改代码常量，sys_account.role_code 由 CK-23 校验 | REQ-02/63 |
 | ~~REL-02~~ | ~~角色 ↔ 权限点~~（**已废止，v1.12**） | — | 权限点与角色授权为代码常量（无关联表） | REQ-63（v2.23） |
 | ~~REL-03~~ | ~~系统账号 → 指定专业数据范围~~（**已废止，v1.12**） | — | 数据范围收敛为全校/只读/全系统（无关联表） | REQ-63（v2.23） |
 | REL-04 | 导入任务 → 岗位数据 | 1:N | FK（job_record.task_id，可空=手工补录无批次） | REQ-06/75、ASM-09 |
@@ -230,17 +221,17 @@ erDiagram
 | REL-10 | 岗位重复指向（后到 → 先到有效） | 自引用 N:1 | FK（job_record.duplicate_of_id） | INV-01、Q3 |
 | REL-11 | 课程体系 → 课程 | 1:N | FK（course.course_system_id） | REQ-16/17 |
 | REL-12 | 课程 → 知识技能点 | 1:N | FK（skill_point.course_id） | REQ-17/18 |
-| REL-13 | 技能点 ↔ 标准技能标签（标准链） | N:N | 关联表 skill_point_std_tag_link（TABLE-37）→ std_tag_sync | REQ-18、Q4 |
-| REL-14 | 技能点 ↔ 产业技能标签（产业链，覆盖率分子） | N:N | 关联表 skill_point_industry_tag_link（TABLE-38）→ industry_tag_sync | REQ-52/53、Q4 |
+| REL-13 | 技能点 ↔ 技能标签（标准/产业由 tag_sync.tag_kind 区分） | N:N | 关联表 skill_point_tag_link（TABLE-37）→ tag_sync | REQ-18/52/53、Q4（v1.14 合并） |
+| ~~REL-14~~ | ~~技能点 ↔ 产业技能标签（独立关联表）~~（**已废止，v1.14**） | — | 并入 REL-13（tag_kind=INDUSTRY） | REQ-52/53、Q4 |
 | REL-15 | 建议 → 目标课程体系（跨库） | N:1 | 逻辑外键 LR-01（存业务键，无 FK） | REQ-19 |
-| REL-16 | 报告 → 外部评审意见 | 1:N | FK（review_opinion.report_id） | REQ-61 |
-| REL-17 | 模型配置 → 路由策略 / 配额 / 调用诊断 | 1:N | FK（各表 model_id） | REQ-67/68/69 |
-| REL-18 | 岗位 → 岗位族校正留痕 | 1:N | FK（job_family_correction.job_id） | REQ-11、AC-13 |
+| ~~REL-16~~ | ~~报告 → 外部评审意见~~（**已废止，v1.16**） | — | 意见并入 report.review_opinions_json | REQ-61 |
+| REL-17 | 模型配置 → 配额 / 调用诊断（主备路由并入主表字段，v1.15） | 1:N | FK（model_quota/ai_call_log.model_id） | REQ-67/68/69（v1.15） |
+| ~~REL-18~~ | ~~岗位 → 岗位族校正留痕~~（**已废止，v1.16**） | — | 校正留痕并入 quality_process_log（ref_job_id，FK-29） | REQ-11、AC-13 |
 | REL-19 | 标准技能标签 ↔ 标准同步副本（跨库） | 同步 | 逻辑外键 LR-03（TagChanged 事件） | REQ-07、AC-67、H-09 |
 | REL-20 | 产业技能标签 ↔ 产业同步副本（跨库） | 同步 | 逻辑外键 LR-04（REQ-53 同步动作） | REQ-53、Q4 |
 | REL-21 | 系统账号 → 关键操作复核单（提交人/复核人） | 1:N | FK-26/27（两个 N:1 角色引用） | REQ-74、AC-92 |
-| REL-22 | 采集任务 → 采集执行记录 | 1:N | FK-28（collect_run.collect_task_id） | REQ-75、AC-93 |
-| REL-23 | 采集执行记录 → 导入任务 | N:1 | 逻辑外键 LR-07（存 import_task_code，容忍导入任务超时删除） | REQ-75、AC-93 |
+| REL-22 | 采集任务 → 导入任务（采集执行记录并入任务行） | 1:N | FK-28（import_task.collect_task_id，可空） | REQ-75、AC-93（v1.14） |
+| ~~REL-23~~ | ~~采集执行记录 → 导入任务~~（**已废止，v1.14**） | — | 执行记录已并入 import_task，无需逻辑外键 | REQ-75、AC-93 |
 | REL-24 | 清洗规则 → 质量处理台账 | 1:N | 逻辑外键 LR-08（存 rule_code 快照，台账只读留存） | REQ-76、AC-94 |
 
 ---
@@ -261,20 +252,16 @@ erDiagram
 | employee_no | VARCHAR(64) | NOT NULL | — | 工号/统一认证账号（仅展示，非登录凭证，不设唯一约束，H-13） | REQ-02、用户裁决 |
 | department | VARCHAR(128) | NOT NULL | — | 所属部门 | REQ-02 |
 | city | VARCHAR(64) | NOT NULL | — | 所在城市（看板区域对比【本地】标签判定依据） | REQ-02/33、AC-73 |
-| role_code | VARCHAR(32) | NOT NULL, FK-01 → role.role_code | — | 角色（六类） | REQ-02/63 |
+| role_code | VARCHAR(32) | NOT NULL, CK-23 | — | 角色（六类，代码常量，v1.14 常量化） | REQ-02/63 |
 | data_scope | VARCHAR(32) | NOT NULL, CK-03 | — | 数据范围枚举（见 §8） | REQ-63 |
 | permission_note | VARCHAR(255) | NULL | NULL | 权限说明 | REQ-02 |
 | status | VARCHAR(16) | NOT NULL, CK-02 | 'ACTIVE' | 启用/停用（维护期操作字段，非创建字段） | REQ-02 |
 | password_hash | VARCHAR(255) | NOT NULL | — | 密码字段（哈希存储；8 位以上含字母数字，应用层校验；修改后重新登录） | REQ-01/02 |
 | last_login_at | DATETIME | NULL | NULL | 最近登录时间 | REQ-64 |
 
-#### TABLE-02 role（角色，ENTITY-02）
+#### ~~TABLE-02 role（角色，ENTITY-02）~~ —— 已废止（v1.14）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| role_code | VARCHAR(32) | PK | — | 角色编码（**六类**固定字典：系统管理员/安全管理员/审计员/专业负责人/教师/数据分析员） | REQ-63 |
-| role_name | VARCHAR(64) | NOT NULL | — | 角色名称（2026-11-26 统一命名） | REQ-63 |
-| role_desc | VARCHAR(255) | NULL | NULL | 职责说明 | REQ-63 |
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：六类角色为固定字典，改**代码常量**；`sys_account.role_code` 由 CK-23 枚举校验，角色名称/职责由常量输出，不建角色表、不提供维护入口。
 
 #### ~~TABLE-03 permission（权限点，ENTITY-03）~~ —— 已废止（v1.12）
 
@@ -308,25 +295,22 @@ erDiagram
 
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
-| account_id | BIGINT UNSIGNED | NOT NULL | — | 操作账号（网关拦截映射生成） | REQ-64、plan.md |
-| employee_no | VARCHAR(64) | NOT NULL | — | 工号（展示冗余，防账号变更失联；非登录凭证） | 归纳、用户裁决 |
-| operate_time | DATETIME | NOT NULL | — | 操作时间（倒序展示） | REQ-64 |
-| operate_content | VARCHAR(500) | NOT NULL | — | 操作内容（网关按请求路径映射） | REQ-64、plan.md |
+| log_type | VARCHAR(16) | NOT NULL, CK-24 | 'OPERATION' | 审计类型：OPERATION 操作日志 / LOGIN 登录审计（v1.14 合并 TABLE-07） | REQ-24/64 |
+| account_id | BIGINT UNSIGNED | NULL | NULL | 操作账号（登录审计未知账号失败时为 NULL） | REQ-24/64、plan.md |
+| employee_no | VARCHAR(64) | NULL | NULL | 工号（展示冗余；未知账号登录失败时 NULL） | 归纳、用户裁决 |
+| account_name | VARCHAR(64) | NULL | NULL | 登录尝试账号（仅 log_type=LOGIN，未知账号也记录） | REQ-24（v1.14） |
+| login_result | VARCHAR(16) | NULL, CK-25 | NULL | 登录结果 SUCCESS/FAILED（仅 log_type=LOGIN） | REQ-24（v1.14） |
+| client_info | VARCHAR(255) | NULL | NULL | 客户端标识（仅登录审计） | 归纳（v1.14） |
+| operate_time | DATETIME | NOT NULL | — | 操作/登录时间（倒序展示） | REQ-24/64 |
+| operate_content | VARCHAR(500) | NOT NULL | — | 操作内容（网关按请求路径映射）；登录审计固定为“登录成功/登录失败” | REQ-24/64、plan.md |
 | request_path | VARCHAR(255) | NULL | NULL | 请求路径 | 归纳 |
 | trace_id | VARCHAR(64) | NULL | NULL | 链路追踪 ID | 归纳 |
 
-> 无 UPDATE/DELETE 应用入口（REQ-64 不可编辑删除）；仅定时任务 90 天清理可删（§10）。
+> 无 UPDATE/DELETE 应用入口（REQ-64 不可编辑删除）；仅定时任务 90 天清理可删（§10）。查询接口按 `log_type` 固化过滤：`/audit/logs`=OPERATION、`/audit/login-records`=LOGIN。
 
-#### TABLE-07 login_audit（登录审计，ENTITY-05）
+#### ~~TABLE-07 login_audit（登录审计，ENTITY-05）~~ —— 已废止（v1.14）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| account_name | VARCHAR(64) | NOT NULL | — | 登录尝试账号名（登录凭证；未知账号登录失败也记录） | REQ-24、用户裁决 |
-| account_id | BIGINT UNSIGNED | NULL | NULL | 命中账号时记录（未知账号登录失败为 NULL） | REQ-24、INV-07 |
-| employee_no | VARCHAR(64) | NULL | NULL | 工号（展示冗余，账号命中时填入） | 归纳 |
-| login_time | DATETIME | NOT NULL | — | 登录时间 | REQ-24 |
-| login_result | VARCHAR(16) | NOT NULL | — | 成功/失败（INV-07 显式记录失败） | REQ-24 |
-| client_info | VARCHAR(255) | NULL | NULL | 客户端标识 | 归纳 |
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：登录审计并入 TABLE-06 operation_log（`log_type=LOGIN`，account_name/login_result/client_info 字段已补入该表）；接口 `/api/v1/audit/login-records` 与 90 天清理策略不变。
 
 ### 6.2 ai_db
 
@@ -340,19 +324,16 @@ erDiagram
 | base_url | VARCHAR(255) | NOT NULL | — | API Base URL | REQ-67 |
 | api_key_cipher | VARCHAR(512) | NOT NULL | — | API Key AES 密文，保存后不可查看 | REQ-67、AC-69 |
 | status | VARCHAR(16) | NOT NULL | — | 状态（启用/停用/灰度验证） | REQ-67 |
+| route_role | VARCHAR(16) | NULL, CK-27 | NULL | 路由角色：PRIMARY 主 / BACKUP 备（NULL=未参与主备路由，v1.15 由 model_route_policy 并入） | REQ-68 |
+| route_trigger_json | JSON | NULL | NULL | 路由触发条件（连续失败 N 次/超时/错误率） | REQ-68（v1.15） |
+| route_enabled | TINYINT(1) | NOT NULL | 0 | 路由策略启停 | REQ-68（v1.15） |
 | remark | VARCHAR(255) | NULL | NULL | 备注 | REQ-67 |
 
-#### TABLE-09 model_route_policy（模型路由策略，ENTITY-07）
+> 主备路由为**全局单策略**：`route_role` 非空的行构成主备两方（PRIMARY/BACKUP 各至多 1 个），由应用层校验；回落/切回留痕写入操作日志（AC-70），不另建切换记录表（极简）。
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| policy_name | VARCHAR(128) | NOT NULL | — | 策略名称 | REQ-68 |
-| primary_model_id | BIGINT UNSIGNED | NOT NULL, FK-14 → model_config | — | 主模型 | REQ-68 |
-| backup_model_id | BIGINT UNSIGNED | NOT NULL, FK-15 → model_config | — | 备用模型 | REQ-68 |
-| trigger_condition_json | JSON | NOT NULL | — | 触发条件（连续失败 N 次/超时/错误率） | REQ-68 |
-| enabled | TINYINT(1) | NOT NULL | 1 | 策略启停 | REQ-68 |
+#### ~~TABLE-09 model_route_policy（模型路由策略，ENTITY-07）~~ —— 已废止（v1.15）
 
-> 回落/切回留痕写入操作日志（AC-70），不另建切换记录表（极简）。
+> **废止说明（2026-11-27 用户裁决，C1 二次压缩）**：主备路由并入 TABLE-08 `model_config`（route_role / route_trigger_json / route_enabled）；REQ-68 主/备、触发条件、启停能力与 AC-70 留痕不变。
 
 #### TABLE-10 model_quota（模型用量配额，ENTITY-08）
 
@@ -385,10 +366,13 @@ erDiagram
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
 | task_code | VARCHAR(32) | NOT NULL, UNIQUE(UQ-02) | — | 任务编码 IMP-YYYYMMDD-NNN（§8） | REQ-06 |
-| file_name | VARCHAR(255) | NOT NULL | — | 源文件名 | REQ-55 |
-| file_object_key | VARCHAR(255) | NOT NULL | — | 本地磁盘文件路径（分片上传产物） | REQ-03、NFR-08 |
-| file_size_bytes | BIGINT | NOT NULL | — | 文件大小（≤3GB 校验，NFR-07） | NFR-07 |
+| file_name | VARCHAR(255) | NULL | NULL | 源文件名（采集失败未产出文件时 NULL） | REQ-55（v1.14） |
+| file_object_key | VARCHAR(255) | NULL | NULL | 本地磁盘文件路径（分片上传产物；采集失败为 NULL） | REQ-03、NFR-08（v1.14） |
+| file_size_bytes | BIGINT | NULL | NULL | 文件大小（≤3GB 校验，NFR-07；采集失败为 NULL） | NFR-07（v1.14） |
 | source_channel | VARCHAR(64) | NULL | NULL | 导入渠道标签（人工导入/采集任务/手工补录；REQ-36 覆盖区统计依据） | REQ-36/75、C-06 修订、H-12 |
+| collect_task_id | BIGINT UNSIGNED | NULL, FK-28 → collect_task | NULL | 来源采集任务（非采集为 NULL；原 collect_run 并入，v1.14） | REQ-75、AC-93 |
+| collect_status | VARCHAR(16) | NULL, CK-18 | NULL | 采集执行状态 RUNNING/SUCCESS/FAILED（非采集为 NULL） | REQ-75、AC-93（v1.14） |
+| fetched_bytes | BIGINT | NULL | NULL | 采集拉取字节数 | REQ-75（v1.14） |
 | total_records | INT | NOT NULL | 0 | 总记录数 | REQ-06 |
 | status | VARCHAR(16) | NOT NULL, CK-01 | 'PENDING' | 五态状态机（§8） | REQ-06、v2.3 裁决 |
 | confirmed_at | DATETIME | NULL | NULL | 人工确认完成时间（→已处理） | REQ-04 |
@@ -398,7 +382,9 @@ erDiagram
 | analysis_duration_ms | INT | NULL | NULL | 自动分析耗时 | REQ-55 |
 | model_version | VARCHAR(64) | NULL | NULL | 分析模型版本 | REQ-55 |
 | queue_priority | VARCHAR(16) | NULL | NULL | 队列优先级 | REQ-55 |
-| error_message | VARCHAR(1000) | NULL | NULL | 失败诊断（INV-07 显式） | INV-07、REQ-06 |
+| mapping_json | JSON | NULL | NULL | 字段映射明细（fileHeader/targetField/confidencePct/aiSuggestionText/isConfirmed/mapSource；原 field_mapping 并入，v1.14） | REQ-04、AC-78 |
+| version | INT | NOT NULL | 1 | 乐观锁版本（映射确认等并发更新防护） | 归纳（v1.14） |
+| error_message | VARCHAR(1000) | NULL | NULL | 失败诊断（INV-07 显式；含采集/解析/入库失败） | INV-07、REQ-06 |
 
 #### TABLE-13 import_temp_record（导入临时数据，ENTITY-11）
 
@@ -411,17 +397,9 @@ erDiagram
 | discard_flag | TINYINT(1) | NOT NULL, CK-12 | 0 | 废弃标记（INV-08，行级） | INV-08、v2.3 裁决 |
 | error_detail | VARCHAR(500) | NULL | NULL | 校验失败原因 | INV-07 |
 
-#### TABLE-14 field_mapping（字段映射，ENTITY-12）
+#### ~~TABLE-14 field_mapping（字段映射，ENTITY-12）~~ —— 已废止（v1.14）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| task_id | BIGINT UNSIGNED | NOT NULL, FK-06 → import_task | — | 所属任务 | REQ-04 |
-| file_header | VARCHAR(128) | NOT NULL | — | 文件表头 | REQ-04 |
-| target_field | VARCHAR(64) | NOT NULL | — | 系统字段 | REQ-04 |
-| confidence_pct | DECIMAL(5,2) | NOT NULL, CK-14 | — | 匹配置信度 % | REQ-04、AC-78 |
-| ai_suggestion_text | VARCHAR(255) | NULL | NULL | AI 建议文案 | REQ-04 |
-| is_confirmed | TINYINT(1) | NOT NULL | 0 | 人工确认标记 | REQ-04 |
-| map_source | VARCHAR(16) | NOT NULL | — | CACHE / AI / MANUAL（§8） | REQ-04 |
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：字段映射明细并入 TABLE-12 `import_task.mapping_json`（数组元素字段不变：fileHeader/targetField/confidencePct/aiSuggestionText/isConfirmed/mapSource）；映射确认整列更新并以 `import_task.version` 乐观锁防并发。
 
 #### ~~TABLE-15 field_mapping_cache（字段映射缓存，ENTITY-13）~~ —— 已废止（v1.12）
 
@@ -466,14 +444,9 @@ erDiagram
 | collected_at | DATETIME | NULL | NULL | **采集/导入时间（溯源）** | REQ-75、AC-95 |
 | source_url | VARCHAR(1000) | NULL | NULL | **原始链接或出处（溯源，可空但推荐）** | REQ-03、AC-95 |
 
-#### TABLE-17 job_family_correction（岗位族人工校正留痕，ENTITY-29）
+#### ~~TABLE-17 job_family_correction（岗位族人工校正留痕，ENTITY-29）~~ —— 已废止（v1.16）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| job_id | BIGINT UNSIGNED | NOT NULL, FK-09 → job_record | — | 岗位 | REQ-11 |
-| old_family | VARCHAR(16) | NULL | NULL | 校正前岗位族 | AC-13 |
-| new_family | VARCHAR(16) | NOT NULL | — | 校正后岗位族（人工结果为准） | REQ-11、AC-13 |
-| corrected_by | VARCHAR(64) | NOT NULL | — | 校正人 | 归纳 |
+> **废止说明（2026-11-27 用户裁决，C2 表压缩）**：校正留痕并入 TABLE-44 `quality_process_log`（issue_type=CORRECTION，ref_job_id + payload_json 存校正前/后岗位族与校正人）；AC-13“以校正后岗位族为准 + 留痕可查”不变。
 
 #### TABLE-18 company（企业，ENTITY-15）
 
@@ -522,19 +495,17 @@ erDiagram
 
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
-| change_type | VARCHAR(16) | NOT NULL | — | 新增/修改/合并 | REQ-07 |
-| tag_id | BIGINT UNSIGNED | NOT NULL | — | 变更标签（FK-13 → std_skill_tag） | REQ-07 |
+| change_type | VARCHAR(16) | NOT NULL | — | 新增/修改/合并；待处理建议行用 SUGGESTION / SUGGESTION_IGNORED（v1.16） | REQ-07 |
+| tag_id | BIGINT UNSIGNED | NULL, FK-13 → std_skill_tag | NULL | 变更标签（建议行可为空，v1.16） | REQ-07 |
 | merged_from_tag_id | BIGINT UNSIGNED | NULL | NULL | 被合并标签 | REQ-07、AC-67 |
 | merged_to_tag_id | BIGINT UNSIGNED | NULL | NULL | 保留标签（映射统一指向） | REQ-07、AC-67 |
+| payload_json | JSON | NULL | NULL | 建议内容（itemType SYNONYM_MERGE/LOW_HEAT_CLEAN、同义词组/低热标签清单；原 tag_pending_item 并入，v1.16） | REQ-07 |
+| item_status | VARCHAR(16) | NULL, CK-28 | NULL | 待处理状态 PENDING/PROCESSED/IGNORED（仅建议行） | REQ-07（v1.16） |
 | operator | VARCHAR(64) | NOT NULL | — | 操作人 | 归纳 |
 
-#### TABLE-23 tag_pending_item（标签待处理事项，ENTITY-20）
+#### ~~TABLE-23 tag_pending_item（标签待处理事项，ENTITY-20）~~ —— 已废止（v1.16）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| item_type | VARCHAR(32) | NOT NULL | — | SYNONYM_MERGE / LOW_HEAT_CLEAN（§8） | REQ-07 |
-| payload_json | JSON | NOT NULL | — | 建议内容（同义词组/低热标签清单） | REQ-07 |
-| item_status | VARCHAR(16) | NOT NULL | 'PENDING' | 待处理/已处理/已忽略 | REQ-07 |
+> **废止说明（2026-11-27 用户裁决，C5 表压缩）**：并入 TABLE-22 `tag_change_log`（change_type=SUGGESTION / SUGGESTION_IGNORED，payload_json 存建议内容，item_status 存待处理/已处理/已忽略）；REQ-07 待处理事项与忽略动作可追溯。
 
 #### TABLE-24 adjustment_suggestion（专业调整建议，ENTITY-21）
 
@@ -563,17 +534,11 @@ erDiagram
 | start_date | DATE | NOT NULL | — | 起始时间 | REQ-49 |
 | end_date | DATE | NOT NULL | — | 截止时间 | REQ-49 |
 | current_stage | VARCHAR(32) | NULL | NULL | 当前评审阶段 | REQ-49 |
+| review_stages_json | JSON | NULL | NULL | 各级评审进度（reviewLevel/reviewStatus/reviewTime/owner/pendingCount；原 review_progress 并入，v1.14） | REQ-49、C-11 |
 
-#### TABLE-26 review_progress（评审进度，ENTITY-23，展示性）
+#### ~~TABLE-26 review_progress（评审进度，ENTITY-23，展示性）~~ —— 已废止（v1.14）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| window_id | BIGINT UNSIGNED | NOT NULL, FK-18 → adjustment_window | — | 所属窗口 | REQ-49 |
-| review_level | VARCHAR(32) | NOT NULL | — | 系初审/课程委员会/院学术委员会/校长办公会 | REQ-49、C-11 |
-| review_status | VARCHAR(16) | NOT NULL | — | 各级状态 | REQ-49 |
-| review_time | DATETIME | NULL | NULL | 时间 | REQ-49 |
-| owner | VARCHAR(64) | NULL | NULL | 负责人 | REQ-49 |
-| pending_count | INT | NULL | NULL | 待确认数 | REQ-49 |
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：评审进度为纯展示数据，并入 TABLE-25 `adjustment_window.review_stages_json`（元素字段：reviewLevel/reviewStatus/reviewTime/owner/pendingCount）；REQ-49 展示能力不变。
 
 #### TABLE-27 report（报告，ENTITY-24）
 
@@ -589,36 +554,33 @@ erDiagram
 | cover_period | VARCHAR(64) | NULL | NULL | 覆盖周期 | REQ-26 |
 | page_count | INT | NULL | NULL | 页数 | REQ-26 |
 | object_key | VARCHAR(255) | NULL | NULL | 本地磁盘文件路径（文件） | 归纳 |
+| review_progress_json | JSON | NULL | NULL | 报告四级评审流程进度（reportReviewStage/reviewStatus/reviewTime/reviewer/expertCount/opinionDeadline/viewed；展示性，v1.16） | REQ-61、AC-63 |
+| review_opinions_json | JSON | NULL | NULL | 外部专家评审意见（expertName/opinionText/recordedAt；原 review_opinion 并入，v1.16） | REQ-61、AC-63 |
 
-#### TABLE-28 review_opinion（外部评审意见，ENTITY-25）
+#### ~~TABLE-28 review_opinion（外部评审意见，ENTITY-25）~~ —— 已废止（v1.16）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| report_id | BIGINT UNSIGNED | NOT NULL, FK-19 → report | — | 报告 | REQ-61 |
-| expert_name | VARCHAR(64) | NOT NULL | — | 评审专家 | REQ-61、T-21 |
-| opinion_text | TEXT | NOT NULL | — | 评审意见（只读录入） | REQ-61 |
+> **废止说明（2026-11-27 用户裁决，C3 表压缩）**：专家评审意见并入 TABLE-27 `report.review_opinions_json`，四级流程进度由 `report.review_progress_json` 承载；REQ-61/AC-63 的只读查看、意见录入与进度展示不变（流程仍为展示性、不做流转引擎）；失去按专家跨报告检索（本期无此需求）。
 
-#### TABLE-29 achievement_ledger（年度建设成果台账，ENTITY-26）
+#### TABLE-29 achievement_ledger（年度成果台账与关键结论，ENTITY-26，v1.16 合并年度关键结论）
 
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
-| year | SMALLINT | NOT NULL | — | 年度 | REQ-62 |
-| category | VARCHAR(32) | NOT NULL | — | 五类成果（§8） | REQ-62 |
-| achievement_name | VARCHAR(255) | NOT NULL | — | 成果名称 | REQ-62 |
-| yearly_completed | INT | NOT NULL | 0 | 本年完成 | REQ-62 |
-| cumulative | INT | NOT NULL | 0 | 累计成果 | REQ-62 |
-| responsible_org | VARCHAR(128) | NULL | NULL | 责任单位 | REQ-62 |
-| progress_pct | DECIMAL(5,2) | NULL | NULL | 完成进度 % | REQ-62 |
-| ach_status | VARCHAR(16) | NULL | NULL | 状态 | REQ-62 |
+| item_kind | VARCHAR(16) | NOT NULL, CK-29 | 'ACHIEVEMENT' | 行项类型：ACHIEVEMENT 成果 / CONCLUSION 年度关键结论 | REQ-59/62（v1.16） |
+| year | SMALLINT | NOT NULL | — | 年度 | REQ-59/62 |
+| category | VARCHAR(32) | NULL | NULL | 五类成果（§8）；ACHIEVEMENT 行非空 | REQ-62（v1.16） |
+| achievement_name | VARCHAR(255) | NULL | NULL | 成果名称；ACHIEVEMENT 行非空 | REQ-62（v1.16） |
+| yearly_completed | INT | NULL | NULL | 本年完成（ACHIEVEMENT 行） | REQ-62 |
+| cumulative | INT | NULL | NULL | 累计成果（ACHIEVEMENT 行） | REQ-62 |
+| responsible_org | VARCHAR(128) | NULL | NULL | 责任单位 | REQ-59/62 |
+| progress_pct | DECIMAL(5,2) | NULL | NULL | 完成进度 %（ACHIEVEMENT 行） | REQ-62 |
+| ach_status | VARCHAR(16) | NULL | NULL | 状态（ACHIEVEMENT 行） | REQ-62 |
+| conclusion_text | VARCHAR(500) | NULL | NULL | 关键结论（CONCLUSION 行必填） | REQ-59（v1.16） |
+| support_metric | VARCHAR(255) | NULL | NULL | 支撑指标（CONCLUSION 行） | REQ-59（v1.16） |
+| jump_ref | VARCHAR(255) | NULL | NULL | 分析依据跳转引用（CONCLUSION 行） | REQ-59（v1.16） |
 
-#### TABLE-30 annual_key_conclusion（年度关键结论，ENTITY-27）
+#### ~~TABLE-30 annual_key_conclusion（年度关键结论，ENTITY-27）~~ —— 已废止（v1.16）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| year | SMALLINT | NOT NULL | — | 年度 | REQ-59 |
-| conclusion_text | VARCHAR(500) | NOT NULL | — | 关键结论 | REQ-59 |
-| support_metric | VARCHAR(255) | NULL | NULL | 支撑指标 | REQ-59 |
-| jump_ref | VARCHAR(255) | NULL | NULL | 分析依据跳转引用 | REQ-59 |
+> **废止说明（2026-11-27 用户裁决，C4 表压缩）**：并入 TABLE-29 `achievement_ledger`（item_kind=CONCLUSION）；REQ-59/AC-61 的关键结论列表与“查看分析依据”跳转不变，按类别直查需带 item_kind 过滤。
 
 #### ~~TABLE-31 sys_param（系统参数，ENTITY-28）~~ —— 已废止（v1.11）
 
@@ -667,42 +629,35 @@ erDiagram
 
 > 唯一约束 UQ-11 =（course_id, skill_point_code）。
 
-#### TABLE-35 std_tag_sync（标准技能标签同步副本，ENTITY-33）
+#### TABLE-35 tag_sync（技能标签同步副本，ENTITY-33，v1.14 合并标准/产业两类）
 
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
-| source_tag_id | BIGINT UNSIGNED | NOT NULL | — | data_db.std_skill_tag.id（逻辑外键 LR-03） | H-09 |
-| tag_code | VARCHAR(32) | NOT NULL | — | 标签编码（冗余） | H-09 |
-| tag_name | VARCHAR(128) | NOT NULL | — | 标签名称（冗余） | H-09 |
-| tag_type | VARCHAR(16) | NOT NULL | — | 类型（冗余） | H-09 |
-| synced_at | DATETIME | NOT NULL | — | 同步时间 | H-09 |
+| tag_kind | VARCHAR(16) | NOT NULL, CK-26 | — | STD 标准技能标签 / INDUSTRY 产业技能标签 | Q4、REQ-53（v1.14） |
+| source_tag_ref | VARCHAR(128) | NOT NULL | — | 源标签引用（STD=data_db.std_skill_tag.id，LR-03；INDUSTRY=源标签引用，LR-04） | H-09、REQ-53 |
+| tag_code | VARCHAR(32) | NULL | NULL | 标签编码（STD 冗余；INDUSTRY 可空） | H-09（v1.14） |
+| tag_name | VARCHAR(128) | NOT NULL | — | 标签名称（冗余） | H-09、REQ-53 |
+| tag_type | VARCHAR(16) | NOT NULL | — | 类型（冗余） | H-09、REQ-53 |
+| synced_at | DATETIME | NOT NULL | — | 同步时间 | H-09、REQ-53 |
 
-> 由 TagChanged 事件（RocketMQ）维护：新增/修改/合并（合并时重指向保留标签）同步至此，保障 REL-13 与 AC-67"课程对齐同步更新"。
+> 由 TagChanged 事件（RocketMQ）维护：新增/修改/合并（合并时重指向保留标签）同步至此，保障 REL-13 与 AC-67"课程对齐同步更新"；产业标签按 REQ-53 同步动作写入同一表（tag_kind=INDUSTRY）。唯一约束 UQ-13=(tag_kind, source_tag_ref)。
 
-#### TABLE-36 industry_tag_sync（产业技能标签同步副本，ENTITY-34）
+#### ~~TABLE-36 industry_tag_sync（产业技能标签同步副本，ENTITY-34）~~ —— 已废止（v1.14）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| source_tag_ref | VARCHAR(128) | NOT NULL | — | 源标签引用（逻辑外键 LR-04） | REQ-53 |
-| tag_name | VARCHAR(128) | NOT NULL | — | 标签名 | REQ-53 |
-| tag_type | VARCHAR(16) | NOT NULL | — | 类型 | REQ-53 |
-| synced_at | DATETIME | NOT NULL | — | 同步时间 | REQ-53 |
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：并入 TABLE-35 `tag_sync`（`tag_kind=INDUSTRY`）；REQ-53 同步与覆盖率分子口径不变。
 
-> REQ-53"同步产业技能标签"动作的落点；知识图谱覆盖率分子（OPEN-07 单向口径）经 TABLE-38 直接可算，分母（产业技能标签总数）由 data-service 统计出口提供（plan.md）。
-
-#### TABLE-37 skill_point_std_tag_link（技能点↔标准标签链，REL-13 关联表）
+#### TABLE-37 skill_point_tag_link（技能点↔技能标签链，REL-13 关联表，v1.14 合并标准/产业两链）
 
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
 | skill_point_id | BIGINT UNSIGNED | PK(组合), FK-22 → skill_point | — | 技能点 | REQ-18、Q4 |
-| std_tag_sync_id | BIGINT UNSIGNED | PK(组合), FK-23 → std_tag_sync | — | 标准技能标签副本 | Q4 |
+| tag_sync_id | BIGINT UNSIGNED | PK(组合), FK-23 → tag_sync | — | 技能标签副本（标准/产业由 tag_sync.tag_kind 区分） | REQ-52/53、Q4（v1.14） |
 
-#### TABLE-38 skill_point_industry_tag_link（技能点↔产业标签链，REL-14 关联表）
+> 覆盖率分子口径不变：被技能点关联且 `tag_sync.tag_kind='INDUSTRY'` 的去重标签数（OPEN-07）；分母仍由 data-service 统计出口提供（plan.md）。
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| skill_point_id | BIGINT UNSIGNED | PK(组合), FK-24 → skill_point | — | 技能点 | REQ-52、Q4 |
-| industry_tag_sync_id | BIGINT UNSIGNED | PK(组合), FK-25 → industry_tag_sync | — | 产业技能标签副本 | REQ-52/53、Q4 |
+#### ~~TABLE-38 skill_point_industry_tag_link（技能点↔产业标签链，REL-14 关联表）~~ —— 已废止（v1.14）
+
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：并入 TABLE-37 `skill_point_tag_link`（关联 tag_sync，按 tag_kind=INDUSTRY 过滤）。
 
 #### TABLE-39 course_change_log（课程变更记录，ENTITY-35）
 
@@ -739,7 +694,7 @@ erDiagram
 | INDEX-07 | idx_task_status_created | import_task | (status, created_at) | 普通 | P-04 任务列表/状态分组、30 分钟超时清理 | REQ-55/04 |
 | INDEX-08 | uq_task_code | import_task | (task_code) | 唯一（UQ-02） | 任务编码唯一 | REQ-06 |
 | INDEX-09 | idx_temp_task_row | import_temp_record | (task_id, row_no) | 普通 | P-03 临时行分页/校验遍历 | REQ-05 |
-| INDEX-10 | idx_field_mapping_task | field_mapping | (task_id) | 普通 | P-03 映射展示（兼 FK-06） | REQ-04 |
+| ~~INDEX-10~~ | ~~idx_field_mapping_task~~ | ~~field_mapping~~ | — | **已废止（v1.14）**：映射并入 import_task.mapping_json，按任务主键读取 | REQ-04 |
 | ~~INDEX-11~~ | ~~uq_field_cache_signature~~ | ~~field_mapping_cache~~ | — | **已废止（v1.12）**：缓存走 Redis | REQ-04、H-06 |
 | INDEX-12 | uq_std_tag_code | std_skill_tag | (tag_code) | 唯一（UQ-05） | 标签编码唯一 | REQ-07 |
 | INDEX-13 | idx_std_tag_name | std_skill_tag | (tag_name) | 普通 | P-05 名称搜索 | REQ-07 |
@@ -754,7 +709,7 @@ erDiagram
 | INDEX-22 | idx_report_status | report | (report_status) | 普通 | P-11 状态筛选 | REQ-58 |
 | INDEX-23 | idx_oplog_time | operation_log | (operate_time) | 普通 | P-08 时间倒序、90 天清理 | REQ-64 |
 | INDEX-24 | idx_oplog_account | operation_log | (account_id, operate_time) | 普通 | P-08 按账号查询 | REQ-64 |
-| INDEX-25 | idx_login_audit | login_audit | (account_name, login_time) | 普通 | P-08 登录审计查询/清理 | REQ-24、用户裁决 |
+| INDEX-25 | idx_audit_login | operation_log | (log_type, account_name, operate_time) | 普通 | P-08 登录审计查询/清理（v1.14 合并后按类型过滤） | REQ-24、用户裁决 |
 | INDEX-26 | uq_sys_account_name | sys_account | (account_name) | 唯一（UQ-01） | 登录账号唯一 | 用户裁决 |
 | INDEX-27 | uq_course_system_key | course_system | (major_name, academic_year, version_no) | 唯一（UQ-09） | P-09 学年+版本切换 | REQ-16 |
 | INDEX-28 | idx_course_sys_catalog | course | (course_system_id, catalog) | 普通 | P-09 目录分组展示 | REQ-17 |
@@ -762,15 +717,17 @@ erDiagram
 | INDEX-30 | idx_course_name | course | (course_name) | 普通 | P-09 名称搜索 | REQ-17 |
 | INDEX-31 | idx_skill_point_course | skill_point | (course_id) | 普通 | 技能点维护（兼 FK-21） | REQ-18 |
 | INDEX-32 | idx_update_hint | update_hint | (is_pending_update, high_priority_flag) | 普通 | REQ-54 待更新/高优先级列表 | REQ-54、ASM-16 |
-| INDEX-33 | idx_tag_pending | tag_pending_item | (item_type, item_status) | 普通 | REQ-07 待处理事项 | REQ-07 |
+| INDEX-33 | idx_tag_change_suggestion | tag_change_log | (change_type, item_status) | 普通 | REQ-07 待处理建议列表（v1.16 原 tag_pending_item 索引迁移至本表） | REQ-07 |
 | INDEX-34 | idx_ai_call_created | ai_call_log | (created_at) | 普通 | 90 天清理、诊断检索 | INV-07 |
 | INDEX-35 | idx_ach_year | achievement_ledger | (year, category) | 普通 | REQ-62 台账分组 | REQ-62 |
 | INDEX-36 | idx_course_change_ref | course_change_log | (ref_type, ref_id) | 普通 | REQ-16/17 变更留痕查询 | REQ-16/17 |
 | INDEX-37 | idx_approval_status | key_operation_approval | (status, created_at) | 普通 | 待复核列表倒序 | REQ-74、AC-92 |
-| INDEX-38 | idx_collect_status | collect_run | (collect_task_id, started_at) | 普通 | 采集执行记录查询 | REQ-75、AC-93 |
+| INDEX-38 | idx_collect_task | import_task | (collect_task_id, created_at) | 普通 | 采集执行记录查询（v1.14 执行记录并入任务表） | REQ-75、AC-93 |
 | INDEX-39 | idx_ledger_task | quality_process_log | (import_task_code, handled_at) | 普通 | 台账按批次/时间查询 | REQ-76、AC-94 |
 | INDEX-40 | uq_target_company_name | target_company | (company_name) | 唯一（UQ-12） | 目标企业清单去重与覆盖率分母 | REQ-31、GAP-03 |
 | INDEX-41 | idx_prediction_lookup | prediction_result | (period_type, target_period, generated_at) | 普通 | 预测结果按周期查询与最新结果取用 | REQ-72、AC-98（v1.11） |
+| INDEX-42 | idx_tag_sync_kind_name | tag_sync | (tag_kind, tag_name) | 普通 | 课程侧标签匹配与覆盖率过滤（v1.14） | REQ-53、AC-67 |
+| INDEX-43 | idx_ledger_job | quality_process_log | (ref_job_id, handled_at) | 普通 | 岗位族人工校正历史查询（v1.16） | REQ-11、AC-13 |
 
 > 聚合重查询（P-06 岗位需求量聚合与排序、P-07 大范围热度趋势）先以实时 SQL + 上述索引承载；若 ≤3s 不达标，按 plan.md 启用汇总物化表兜底（H-08，非本期必建）。除上述索引与约束隐含索引（PK/FK 自动索引）外不建冗余索引（Q7：未覆盖查询路径不建索引）。
 
@@ -789,19 +746,9 @@ erDiagram
 | enabled | TINYINT(1) | NOT NULL | 1 | 启用状态 | REQ-75 |
 | created_by | VARCHAR(64) | NOT NULL | — | 创建人 | 归纳 |
 
-#### TABLE-42 collect_run（采集执行记录，ENTITY-38）
+#### ~~TABLE-42 collect_run（采集执行记录，ENTITY-38）~~ —— 已废止（v1.14）
 
-| 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
-| --- | --- | --- | --- | --- | --- |
-| collect_task_id | BIGINT UNSIGNED | NOT NULL, FK-28 → collect_task | — | 采集任务 | REQ-75 |
-| import_task_code | VARCHAR(32) | NULL | NULL | 关联导入任务（IMP-*，逻辑引用 LR-07） | REQ-75 |
-| status | VARCHAR(16) | NOT NULL, CK-18 | 'RUNNING' | 状态（RUNNING/SUCCESS/FAILED） | REQ-75 |
-| fetched_bytes | BIGINT | NULL | NULL | 拉取字节数 | REQ-75 |
-| imported_records | INT | NULL | NULL | 导入记录数（增量） | REQ-75 |
-| error_message | VARCHAR(500) | NULL | NULL | 失败原因（显式） | INV-07 |
-| started_at / finished_at | DATETIME | NULL | NULL | 起止时间 | REQ-75 |
-
-> 索引：`idx_collect_status (collect_task_id, started_at)`。
+> **废止说明（2026-11-27 用户裁决，方案 B 表压缩）**：执行记录并入 TABLE-12 `import_task`（collect_task_id / collect_status / fetched_bytes；采集失败建 FAILED 任务并记 error_message）；执行记录查询改为按 `collect_task_id` 过滤 import_task（INDEX-38）。
 
 #### TABLE-43 clean_rule（清洗规则，ENTITY-39）
 
@@ -818,14 +765,16 @@ erDiagram
 | 字段 | 类型 | 约束 | 默认 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
 | import_task_code | VARCHAR(32) | NOT NULL | — | 批次（IMP-*） | REQ-76 |
-| issue_type | VARCHAR(32) | NOT NULL | — | 问题类型（MISSING/DUPLICATE/ABNORMAL/FORMAT） | REQ-76 |
-| record_count | INT | NOT NULL | — | 涉及数据量 | REQ-76 |
-| action | VARCHAR(64) | NOT NULL | — | 处理动作（删除/标记/补全/归一） | REQ-76 |
+| issue_type | VARCHAR(32) | NOT NULL | — | 问题类型（MISSING/DUPLICATE/ABNORMAL/FORMAT/CORRECTION；CORRECTION=岗位族人工校正，v1.16） | REQ-11/76 |
+| ref_job_id | BIGINT UNSIGNED | NULL, FK-29 → job_record | NULL | 关联岗位（issue_type=CORRECTION 时必填；原 job_family_correction 并入，v1.16） | REQ-11、AC-13 |
+| payload_json | JSON | NULL | NULL | 留痕明细（校正前/后岗位族、校正人等；v1.16） | AC-13 |
+| record_count | INT | NOT NULL | — | 涉及数据量（校正行为 1） | REQ-76 |
+| action | VARCHAR(64) | NOT NULL | — | 处理动作（删除/标记/补全/归一/校正岗位族） | REQ-76 |
 | rule_code | VARCHAR(32) | NULL | NULL | 触发的规则（逻辑引用 LR-08，存编码快照） | REQ-76 |
-| handled_by | VARCHAR(64) | NOT NULL | — | 处理人（系统任务记 SYSTEM） | REQ-76 |
+| handled_by | VARCHAR(64) | NOT NULL | — | 处理人（系统任务记 SYSTEM；校正人为操作者） | REQ-76 |
 | handled_at | DATETIME | NOT NULL | — | 处理时间 | REQ-76 |
 
-> 索引：`idx_ledger_task (import_task_code, handled_at)`。
+> 索引：`idx_ledger_task (import_task_code, handled_at)`；`idx_ledger_job (ref_job_id, handled_at)`（INDEX-43，岗位族校正历史查询，v1.16）。
 
 ### 6.9 目标企业清单表（v1.10 新增，REQ-31/GAP-03）
 
@@ -868,7 +817,7 @@ erDiagram
 
 ### 7.1 主键约束
 
-全部 42 张有效表均有主键：业务字典表以业务编码列为主键（role/clean_rule）；其余以 `id BIGINT UNSIGNED AUTO_INCREMENT` 代理主键（来源：归纳）；关联表（TABLE-37/38）以组合列为主键。
+全部 30 张有效表均有主键：业务字典表以业务编码列为主键（clean_rule）；其余以 `id BIGINT UNSIGNED AUTO_INCREMENT` 代理主键（来源：归纳）；关联表（TABLE-37）以组合列为主键。
 
 ### 7.2 唯一约束（UQ-*）
 
@@ -886,6 +835,7 @@ erDiagram
 | UQ-10 | course | (course_system_id, course_code) | REQ-17 |
 | UQ-11 | skill_point | (course_id, skill_point_code) | REQ-18 |
 | UQ-12 | target_company | company_name | REQ-31、GAP-03 |
+| UQ-13 | tag_sync | (tag_kind, source_tag_ref) | Q4、REQ-53（v1.14） |
 
 > 注：job_record 的（company_name, job_name）**刻意不设唯一约束**——INV-01 要求重复数据正常入库并标记，唯一性由"先到有效 + duplicate_flag"语义保障（Q3、H-02）。
 
@@ -895,28 +845,29 @@ erDiagram
 
 | 编号 | 子表.列 → 父表 | 来源 |
 | --- | --- | --- |
-| FK-01 | sys_account.role_code → role | REQ-63 |
+| ~~FK-01~~ | ~~sys_account.role_code → role~~（**已废止，v1.14**） | 角色常量化，改 CK-23 枚举校验（REQ-63） |
 | ~~FK-02/03~~ | ~~role_permission → role / permission~~（**已废止，v1.12**） | REQ-63（v2.23 常量化） |
 | ~~FK-04~~ | ~~account_data_scope.account_id → sys_account~~（**已废止，v1.12**） | REQ-63（v2.23 范围收敛） |
 | FK-05 | import_temp_record.task_id → import_task | REQ-05 |
-| FK-06 | field_mapping.task_id → import_task | REQ-04 |
+| ~~FK-06~~ | ~~field_mapping.task_id → import_task~~（**已废止，v1.14**） | 映射并入 import_task.mapping_json（REQ-04） |
 | FK-07 | job_record.task_id → import_task（NULL=手工补录） | REQ-06/75 |
 | FK-08 | job_record.duplicate_of_id → job_record(id) | Q3、INV-01 |
-| FK-09 | job_family_correction.job_id → job_record | REQ-11 |
+| ~~FK-09~~ | ~~job_family_correction.job_id → job_record~~（**已废止，v1.16**） | 校正留痕并入 quality_process_log.ref_job_id（FK-29） |
 | FK-10 | job_tag.job_id → job_record | REQ-08 |
 | FK-11/12 | tag_mapping.job_tag_id → job_tag；std_tag_id → std_skill_tag | REQ-08 |
-| FK-13 | tag_change_log.tag_id → std_skill_tag | REQ-07 |
-| FK-14/15 | model_route_policy.primary/backup_model_id → model_config | REQ-68 |
+| FK-13 | tag_change_log.tag_id → std_skill_tag（建议行可空，v1.16） | REQ-07 |
+| ~~FK-14/15~~ | ~~model_route_policy.primary/backup_model_id → model_config~~（**已废止，v1.15**） | 路由并入 model_config 字段，主备唯一性由应用层校验（REQ-68） |
 | FK-16 | model_quota.model_id → model_config | REQ-69 |
 | FK-17 | ai_call_log.model_id → model_config | INV-07 |
-| FK-18 | review_progress.window_id → adjustment_window | REQ-49 |
-| FK-19 | review_opinion.report_id → report | REQ-61 |
+| ~~FK-18~~ | ~~review_progress.window_id → adjustment_window~~（**已废止，v1.14**） | 评审进度并入 adjustment_window.review_stages_json（REQ-49） |
+| ~~FK-19~~ | ~~review_opinion.report_id → report~~（**已废止，v1.16**） | 评审意见并入 report.review_opinions_json |
 | FK-20 | course.course_system_id → course_system | REQ-16 |
 | FK-21 | skill_point.course_id → course | REQ-18 |
-| FK-22/23 | skill_point_std_tag_link → skill_point / std_tag_sync | Q4 |
-| FK-24/25 | skill_point_industry_tag_link → skill_point / industry_tag_sync | Q4 |
+| FK-22/23 | skill_point_tag_link.skill_point_id / tag_sync_id → skill_point / tag_sync（v1.14 合并） | Q4、REQ-53 |
+| ~~FK-24/25~~ | ~~skill_point_industry_tag_link → skill_point / industry_tag_sync~~（**已废止，v1.14**） | 并入 FK-22/23 |
 | FK-26/27 | key_operation_approval.submitter_id / reviewer_id → sys_account | REQ-74、AC-92 |
-| FK-28 | collect_run.collect_task_id → collect_task | REQ-75、AC-93 |
+| FK-28 | import_task.collect_task_id → collect_task（可空；原 collect_run 并入，v1.14） | REQ-75、AC-93 |
+| FK-29 | quality_process_log.ref_job_id → job_record（可空；岗位族校正留痕，v1.16） | REQ-11、AC-13 |
 
 **逻辑外键（跨库禁 FK，替代机制与一致性风险）**
 
@@ -924,11 +875,11 @@ erDiagram
 | --- | --- | --- | --- | --- |
 | LR-01 | adjustment_suggestion.target_course_system_key → curriculum_db.course_system | 存业务键（专业+学年+版本）；应用层 Feign 校验存在性 | 体系被删除后建议引用悬空 → 建议仅存快照键，展示时显式提示"目标体系不存在"（INV-07 精神） | REQ-19、Q1 |
 | LR-02 | update_hint.std_tag_ref → data_db.std_skill_tag | 事件同步 + 展示冗余 skill_name | 标签删除后提示残留 → 标签本期无删除（仅停用），风险低 | REQ-54、Q1 |
-| LR-03 | std_tag_sync.source_tag_id → data_db.std_skill_tag | TagChanged 事件（RocketMQ）维护副本 | 事件丢失导致副本滞后 → 合并类变更有 tag_change_log 可对账巡检 | AC-67、H-09 |
-| LR-04 | industry_tag_sync.source_tag_ref → data_db 产业技能标签 | REQ-53 同步动作 | 同步窗口内覆盖率口径滞后 → 界面展示最近同步时间（REQ-40 风格） | REQ-53、Q4 |
+| LR-03 | tag_sync(tag_kind=STD).source_tag_ref → data_db.std_skill_tag | TagChanged 事件（RocketMQ）维护副本 | 事件丢失导致副本滞后 → 合并类变更有 tag_change_log 可对账巡检 | AC-67、H-09（v1.14） |
+| LR-04 | tag_sync(tag_kind=INDUSTRY).source_tag_ref → data_db 产业技能标签 | REQ-53 同步动作 | 同步窗口内覆盖率口径滞后 → 界面展示最近同步时间（REQ-40 风格） | REQ-53、Q4（v1.14） |
 | LR-05 | course_change_log.ref_id 多态引用 | 应用层按 ref_type 校验 | 无 FK 保护，删除课程后留痕保留（符合留痕语义） | 归纳 |
 | LR-06 | operation_log 由网关拦截映射生成、经 MQ 推送 user_db | 网关+MQ 通道（plan.md 裁决） | MQ 堆积导致审计延迟 → 日志按时间查询容忍分钟级延迟 | REQ-64、plan.md |
-| LR-07 | collect_run.import_task_code → import_task.task_code | 存业务编码快照；应用层按需查询（导入任务可超时删除，不建 FK） | 任务删除后采集记录仅留编码，展示时显式"关联任务已清理"（INV-07 精神） | REQ-75、AC-93 |
+| ~~LR-07~~ | ~~collect_run.import_task_code → import_task.task_code~~（**已废止，v1.14**） | 执行记录已并入 import_task，无需逻辑外键 | — | REQ-75、AC-93 |
 | LR-08 | quality_process_log.rule_code → clean_rule.rule_code | 台账存规则编码快照；规则停用不删除（配置类） | 规则调整后历史台账保持当时编码，审计语义不丢失 | REQ-76、AC-94 |
 
 ### 7.4 检查约束（CK-*）
@@ -952,11 +903,18 @@ erDiagram
 | CK-15 | job_record.ai_collab_type | IS NULL OR IN ('AI_APP_DEV','AI_TEST_OPS')；ai_collab_flag=0 时 IS NULL | REQ-30（v2.19） |
 | CK-16 | company.soft_digital_cloud_flag | IN (0,1) | REQ-56、INV-04（v1.10） |
 | CK-17 | key_operation_approval.status | IN ('PENDING','APPROVED','REJECTED') | REQ-74、AC-92 |
-| CK-18 | collect_task.source_type / collect_run.status | source_type IN ('TEMPLATE','FILE')；status IN ('RUNNING','SUCCESS','FAILED') | REQ-75、AC-93 |
+| CK-18 | collect_task.source_type / import_task.collect_status | source_type IN ('TEMPLATE','FILE')；collect_status IN ('RUNNING','SUCCESS','FAILED')；collect_status 非空时 collect_task_id 非空 | REQ-75、AC-93（v1.14） |
 | CK-19 | prediction_result.model_type | IN ('MOVING_AVERAGE','EXP_SMOOTHING','LINEAR_REGRESSION','COMBINED') | REQ-72、AC-98（v1.11） |
 | CK-20 | prediction_result.period_type | IN ('QUARTER','YEAR') | REQ-72、AC-98（v1.11） |
 | CK-21 | prediction_result.trend_direction | IN ('UP','DOWN','FLAT') | REQ-72、AC-98（v1.11） |
 | CK-22 | prediction_result.mape | BETWEEN 0 AND 100 | REQ-72、AC-98（v1.11） |
+| CK-23 | sys_account.role_code | IN（SYS_ADMIN/SEC_ADMIN/AUDITOR/MAJOR_LEADER/TEACHER/DATA_ANALYST，§8 RoleCode） | REQ-63（v1.14） |
+| CK-24 | operation_log.log_type | IN ('OPERATION','LOGIN') | REQ-24/64（v1.14） |
+| CK-25 | operation_log.login_result | IS NULL OR IN ('SUCCESS','FAILED')；log_type=LOGIN 时非空 | REQ-24（v1.14） |
+| CK-26 | tag_sync.tag_kind | IN ('STD','INDUSTRY') | Q4、REQ-53（v1.14） |
+| CK-27 | model_config.route_role / route_enabled | route_role IS NULL OR IN ('PRIMARY','BACKUP')；route_enabled IN (0,1)；全局 PRIMARY/BACKUP 各至多 1 个（应用层校验） | REQ-68（v1.15） |
+| CK-28 | tag_change_log.item_status | IS NULL OR IN ('PENDING','PROCESSED','IGNORED')；change_type 以 SUGGESTION 开头时非空 | REQ-07（v1.16） |
+| CK-29 | achievement_ledger.item_kind 与行字段 | item_kind IN ('ACHIEVEMENT','CONCLUSION')；ACHIEVEMENT 行 category/achievement_name 非空；CONCLUSION 行 conclusion_text 非空 | REQ-59/62（v1.16） |
 
 ### 7.5 业务规则约束（写入口隔离 + 流程约束，非 DDL 可表达）
 
@@ -994,7 +952,7 @@ erDiagram
 | TagType 标签类型 | SKILL 技能 / TOOL 工具 / ENGINEERING 工程能力 | job_tag.tag_type、std_skill_tag.tag_type | REQ-07/09、C-16 |
 | TagSource 标签来源 | IMPORTED 原始 / EXTRACTED 抽取 | job_tag.tag_source | REQ-08/09 |
 | SourceChannel 来源渠道 | IMPORT 人工导入 / COLLECT 采集任务 / MANUAL 手工补录 | import_task.source_channel、job_record.source_channel | REQ-03/75、C-06（v2.21） |
-| MapMethod 映射方式 | CACHE 缓存 / AI 预映射 / MANUAL 人工校正 | field_mapping.map_source、tag_mapping.map_method | REQ-04/08 |
+| MapMethod 映射方式 | CACHE 缓存 / AI 预映射 / MANUAL 人工校正 | import_task.mapping_json(mapSource)、tag_mapping.map_method | REQ-04/08（v1.14） |
 | MapStatus 映射状态 | MAPPED / UNMAPPED 未映射（显式标记） | tag_mapping.map_status | REQ-08 |
 | SuggestionType 建议类型 | DIRECTION 专业方向 / COURSE_CONTENT 课程内容 / SKILL_POINT 知识技能点 | adjustment_suggestion.suggestion_type | REQ-20、C-17（v2.24） |
 | SuggestionStatus 建议状态 | PENDING 待确认 / CONFIRMED 已确认 / ARCHIVED 归档参考 | adjustment_suggestion.status | REQ-21/47 |
@@ -1003,27 +961,34 @@ erDiagram
 | CourseCatalog 课程分类 | CORE 专业核心课 / DIRECTION 专业方向课 / PRACTICE 实践课 | course.catalog | REQ-17 |
 | DataScope 数据范围 | SCHOOL 全校产业/专业数据 / READONLY 只读汇总/报告 / ALL 全系统（v2.23 取消 MAJOR） | sys_account.data_scope | REQ-63 |
 | AccountStatus 账号状态 | ACTIVE 启用 / DISABLED 停用 | sys_account.status | REQ-02 |
-| RoleCode 角色编码 | SYS_ADMIN 系统管理员 / SEC_ADMIN 安全管理员 / AUDITOR 审计员 / MAJOR_LEADER 专业负责人 / TEACHER 教师 / DATA_ANALYST 数据分析员 | role.role_code、sys_account.role_code | REQ-63（编码为归纳） |
+| RoleCode 角色编码 | SYS_ADMIN 系统管理员 / SEC_ADMIN 安全管理员 / AUDITOR 审计员 / MAJOR_LEADER 专业负责人 / TEACHER 教师 / DATA_ANALYST 数据分析员 | sys_account.role_code（代码常量） | REQ-63（编码为归纳，v1.14 常量化） |
+| AuditLogType 审计类型 | OPERATION 操作日志 / LOGIN 登录审计 | operation_log.log_type | REQ-24/64（v1.14） |
+| LoginResult 登录结果 | SUCCESS 成功 / FAILED 失败 | operation_log.login_result | REQ-24（v1.14） |
+| TagKind 技能标签副本类型 | STD 标准技能标签 / INDUSTRY 产业技能标签 | tag_sync.tag_kind | Q4、REQ-53（v1.14） |
 | ApprovalStatus 复核状态 | PENDING 待复核 / APPROVED 已复核 / REJECTED 已驳回 | key_operation_approval.status | REQ-74、AC-92 |
 | ApprovalOperationType 复核操作类型 | ACCOUNT_CREATE 账号创建 / ACCOUNT_DISABLE 账号停用 / PASSWORD_RESET 密码重置 / ROLE_PERM_CHANGE 角色权限变更 / MODEL_KEY_CONFIG 模型 Key 配置 / PARAM_CONFIG 参数配置 / BACKUP_RESTORE 备份恢复 | key_operation_approval.operation_type | REQ-74（枚举为归纳，清单可扩展） |
-| ReviewLevel 评审级别 | DEPT 系初审 / COURSE_COMMITTEE 课程委员会 / ACADEMIC 院学术委员会 / PRESIDENT 校长办公会 | review_progress.review_level | REQ-49、C-11 |
+| ReviewLevel 评审级别 | DEPT 系初审 / COURSE_COMMITTEE 课程委员会 / ACADEMIC 院学术委员会 / PRESIDENT 校长办公会 | adjustment_window.review_stages_json(reviewLevel) | REQ-49、C-11（v1.14） |
 | AccessType 接入方式 | API / LOCAL 本地推理 | model_config.access_type | REQ-67 |
+| RouteRole 路由角色 | PRIMARY 主模型 / BACKUP 备用模型 / NULL 未参与路由 | model_config.route_role | REQ-68（v1.15） |
 | NotifyMethod 通知方式 | IN_APP 站内消息 / EMAIL 邮件 | model_quota.notify_method | REQ-69 |
 | BloomLevel 布鲁姆层级 | REMEMBER 识记 / UNDERSTAND 理解 / APPLY 应用 / ANALYZE 分析 / EVALUATE 评价 / CREATE 创造 | skill_point.bloom_level | REQ-18 |
 | LabelingStatus 标注状态 | PENDING 待标注 / COMPLETED 标注完成 / FAILED 标注失败 | job_record.labeling_status | INV-09 |
 | ValidateStatus 校验结果 | PASS 通过 / FAIL 不通过 | import_temp_record.validation_status | REQ-05 |
-| PendingItemType 待处理事项类型 | SYNONYM_MERGE AI 同义词合并建议 / LOW_HEAT_CLEAN 低热度标签清理提醒 | tag_pending_item.item_type | REQ-07 |
+| PendingItemType 待处理事项类型 | SYNONYM_MERGE AI 同义词合并建议 / LOW_HEAT_CLEAN 低热度标签清理提醒 | tag_change_log.payload_json(itemType) | REQ-07（v1.16） |
+| PendingItemStatus 待处理状态 | PENDING 待处理 / PROCESSED 已处理 / IGNORED 已忽略 | tag_change_log.item_status | REQ-07（v1.16） |
 | AITaskType 调用场景 | PRE_MAPPING 字段预映射 / SKILL_EXTRACT 技能抽取 / FAMILY_CLASSIFY 岗位族归类 / AI_COLLAB 协同判定 / SOFT_CLOUD 软数智云判定 / SYNONYM 同义词分析 / SUGGESTION 建议生成 / TREND_FORECAST 趋势年份推断 | ai_call_log.task_type | REQ-09/56、INV-07 |
 | CollectSourceType 采集来源类型 | TEMPLATE 模板 / FILE 文件拉取（无爬虫） | collect_task.source_type | REQ-75 |
 | CollectFrequency 采集频率 | DAILY 每日 / WEEKLY 每周 / MONTHLY 每月 | collect_task.frequency | REQ-75 |
-| CollectRunStatus 采集执行状态 | RUNNING 执行中 / SUCCESS 成功 / FAILED 失败 | collect_run.status | REQ-75、AC-93 |
+| CollectRunStatus 采集执行状态 | RUNNING 执行中 / SUCCESS 成功 / FAILED 失败 | import_task.collect_status | REQ-75、AC-93（v1.14） |
 | CleanRuleType 清洗规则类型 | TRIM 去空 / DEDUP 去重 / OUTLIER 异常值处理 / NORMALIZE 格式归一 | clean_rule.rule_code | REQ-76 |
-| IssueType 质量问题类型 | MISSING 缺失 / DUPLICATE 重复 / ABNORMAL 异常值 / FORMAT 格式不规范 | quality_process_log.issue_type | REQ-76、AC-94 |
+| IssueType 质量问题类型 | MISSING 缺失 / DUPLICATE 重复 / ABNORMAL 异常值 / FORMAT 格式不规范 / **CORRECTION 岗位族人工校正**（v1.16） | quality_process_log.issue_type | REQ-11/76、AC-94 |
 | ReportFormat 报告/导出格式 | PDF / EXCEL（Word 不实现） | report.format、导出文件 | REQ-73 |
 | PredictionModelType 预测模型类型 | MOVING_AVERAGE 移动平均 / EXP_SMOOTHING 指数平滑 / LINEAR_REGRESSION 线性回归 / COMBINED 组合 | prediction_result.model_type | REQ-72（v2.22） |
 | PredictionPeriodType 预测周期类型 | QUARTER 下一季度 / YEAR 下一年 | prediction_result.period_type | REQ-72、AC-98 |
 | TrendDirection 趋势方向 | UP 升 / DOWN 降 / FLAT 平 | prediction_result.trend_direction | REQ-72、AC-98 |
-| AchievementCategory 成果类别 | PROFESSION 专业方向 / COURSE_CONTENT 课程内容 / SKILL_POINT 知识技能点 / PRACTICE_PROJECT 实践项目 / TEACHING_RESOURCE 教学资源 | achievement_ledger.category | REQ-62 |
+| AchievementCategory 成果类别 | PROFESSION 专业方向 / COURSE_CONTENT 课程内容 / SKILL_POINT 知识技能点 / PRACTICE_PROJECT 实践项目 / TEACHING_RESOURCE 教学资源 | achievement_ledger.category（item_kind=ACHIEVEMENT） | REQ-62 |
+| AchievementItemKind 年度行项类型 | ACHIEVEMENT 年度成果 / CONCLUSION 年度关键结论 | achievement_ledger.item_kind | REQ-59/62（v1.16） |
+| ReportReviewStage 报告评审阶段 | INTERNAL_REVIEW 院内初审 / SCHOOL_LEADER 校领导审阅 / EXTERNAL_EXPERT 外部专家评审 / PUBLISHED 发布归档（展示性） | report.review_progress_json(reportReviewStage) | REQ-61、AC-63、C-11（v1.16） |
 
 ### 8.2 数据格式规范
 
@@ -1035,7 +1000,7 @@ erDiagram
 | 日期/时间 | 发布日期用 `DATE`（时间归属按发布日期，REQ-12）；其余时间戳 `DATETIME` | REQ-12 |
 | 金额 | 月薪 `DECIMAL(10,2)` 元/月，标准化失败为 NULL（原文存 salary_raw） | REQ-06、H-05 |
 | 百分比/指数 | 置信度、热度、紧缺指数、进度均 0-100（`DECIMAL(5,2)` 或整数） | REQ-20/04 |
-| JSON 列 | raw_payload_json / syllabus_json / trigger_condition_json / payload_json / mapping_payload_json / data_tags_json：UTF-8 JSON | 归纳 |
+| JSON 列 | raw_payload_json / syllabus_json / trigger_condition_json / payload_json / mapping_payload_json / data_tags_json / **import_task.mapping_json / adjustment_window.review_stages_json / model_config.route_trigger_json / report.review_progress_json / report.review_opinions_json / tag_change_log.payload_json / quality_process_log.payload_json**：UTF-8 JSON | 归纳、v1.14~v1.16 新增 |
 | 字符集 | utf8mb4（排序规则 utf8mb4_0900_ai_ci 或等价，随 minor 版本确认，OPEN-DB-01） | 归纳 |
 | 脱敏规范 | 入库字段白名单：岗位名称、公司名称、城市/省份、行业、技能要求、发布日期、薪资、JD 文本；禁止个人联系方式、简历原文（REQ-70） | REQ-03/70 |
 | 岗位扩展属性 | job_record 的所在区域/工作地址/学历要求/工作年限/福利：可空、非必填，导入原文保留，暂不做枚举标准化（学历/年限后续如需统计再议标准化） | 用户裁决 |
@@ -1054,8 +1019,8 @@ erDiagram
 | 扩展性 | 标签分类可扩展 | category 独立字段（C-16 两维度），新增分类无需改表 | REQ-07 |
 | 扩展性 | 参数可维护 | 参数配置经 **Nacos OpenAPI** 在系统内维护（指定 namespace/group/DataId，发布即生效）；**不建 sys_param 表、不做 DB 双写**（AD-17） | REQ-63、AD-17（v2.22） |
 | 安全性 | 凭据安全 | 密码哈希存储；API Key AES 密文、保存后不可读 | REQ-01/67 |
-| 安全性 | 最小授权 | RBAC（`role` + **代码常量权限点/角色授权**）+ 数据范围（`sys_account.data_scope`）+ 关键操作双人复核（key_operation_approval，REQ-74）；不建 permission/role_permission/account_data_scope | REQ-63/74（v1.12） |
-| 安全性 | 可审计 | 操作日志/登录审计 90 天；权限变更立即生效并留痕（REQ-63） | REQ-24/64 |
+| 安全性 | 最小授权 | RBAC（**代码常量角色/权限点/角色授权**）+ 数据范围（`sys_account.data_scope`）+ 关键操作双人复核（key_operation_approval，REQ-74）；不建 role/permission/role_permission/account_data_scope（v1.12/v1.14） | REQ-63/74（v1.14） |
+| 安全性 | 可审计 | 审计流水（操作+登录，统一 operation_log）90 天；权限变更立即生效并留痕（REQ-63） | REQ-24/64 |
 | 可用性/容错 | OPEN-03 已冻结关闭（v2.22）：按 INV-07 显式失败与重试、不承诺 SLA；AI 失败显式暴露可重试 | ai_call_log 诊断留痕（INV-07） | NFR-05、INV-07 |
 
 ---
@@ -1068,11 +1033,11 @@ erDiagram
 | 临时表数据（含废弃行） | 批次结束后保留 30 天供排查，之后清理 | 用户裁决 Q6 |
 | 导入原文件（本地磁盘） | 任务完成后保留 30 天删除 | 用户裁决 Q6 |
 | 操作日志 | 仅保留最近 90 天；不可编辑删除；定时任务周期清理 | REQ-64 |
-| 登录审计 | 保留 90 天，周期清理 | 用户裁决 Q6 |
+| 登录审计 | 并入 operation_log（log_type=LOGIN），保留 90 天，周期清理（v1.14） | 用户裁决 Q6 |
 | AI 调用诊断记录 | 保留 90 天，周期清理 | 用户裁决 Q6 |
 | 正式业务数据（岗位/标签/企业/课程/建议/报告/成果） | 长期保留；本期无归档/删除需求（重复标记仅排除统计、不删行；标签仅停用不删） | 归纳（spec 无删数要求） |
 | 关键操作复核单 | 长期保留（审计留痕），不设自动清理 | REQ-74（OPEN-DB-03 关闭，v1.11） |
-| 采集执行记录 / 质量处理台账 | 长期保留（采集与质量追溯），不设自动清理 | REQ-75/76（OPEN-DB-03 关闭，v1.11） |
+| 采集执行记录（import_task 采集字段）/ 质量处理台账 | 长期保留（采集与质量追溯），不设自动清理 | REQ-75/76（OPEN-DB-03 关闭，v1.11；v1.14 执行记录并入任务表） |
 | 【软数智云】目标企业清单 | 随 Excel 导入**全量替换**（先清空再写入）；历史版本不留存 | REQ-31、GAP-03（v2.22，OPEN-DB-04 关闭） |
 | 人才需求预测结果 | 长期保留（可重算；同筛选条件以最新 generated_at 结果为准） | REQ-72、AC-98（v1.11） |
 | 备份与恢复 | 需求边界：每日凌晨全量备份四库、保留 7 天、恢复演练纳入检查单（spec v2.8、plan §4.2.1）；**备份恢复本期由运维执行、系统内不建发起入口**（v2.22）；具体备份/恢复/高可用实施方案不在本阶段范围；OPEN-03 已冻结（不承诺 SLA） | REQ-01、NFR-05、spec v2.8（v2.22） |
@@ -1086,7 +1051,7 @@ erDiagram
 | AI 大模型服务 | 入：岗位文本、技能列表、分析参数；出：抽取标签、归类/标记结果、建议清单、预测年份 | 异步批量（MQ）+ 结果回写 data_db；失败显式记录 ai_call_log 并可重试（INV-07）；主备路由回落（REQ-68） | spec §9、INV-07/09 |
 | 人才需求预测（统计时序，ai-service 本地计算） | 入：历史月度岗位需求序列（有效职位）+ 区域/行业/岗位族筛选；出：预测值/趋势方向/增长提示/MAPE/模型版本/生成时间 | 同步 OpenFeign（data-service→ai-service `/internal/ai/predict-demand`）；结果落 data_db `prediction_result`，可重算；**不调用大模型** | REQ-72、AC-98、AD-18（v1.11） |
 | 本地磁盘文件存储 | 导入文件（≤3GB、分片上传）、报告文件、数据质量报告 | DB 仅存文件路径；临时文件 30 天清理（§10） | REQ-03、NFR-08 |
-| RocketMQ | ①审计日志：网关拦截→user_db（LR-06）；②TagChanged：data_db→curriculum_db 副本（LR-03/04）；③AI 打标任务与结果 | 最终一致；副本滞后以 tag_change_log 对账巡检 | plan.md、REQ-53 |
+| RocketMQ | ①审计流水（操作+登录）：网关拦截→user_db（LR-06）；②TagChanged：data_db→curriculum_db `tag_sync` 副本（LR-03/04）；③AI 打标任务与结果 | 最终一致；副本滞后以 tag_change_log 对账巡检 | plan.md、REQ-53（v1.14） |
 | OpenFeign（跨服务读取） | 看板/建议生成跨服务取数（如覆盖率分母来自 data-service） | 只读调用 + 缓存；跨库禁 Join | plan.md AD-09 |
 | Redis Stack / Nacos | 串行锁、缓存、配额计数、**向量索引（RediSearch，语义相似检索，非权威数据，可重建）**；超时清理/日志清理/重试扫描/配额统计由 XXL-Job 调度（plan AD-05 v3.3 恢复） | 运行中间件边界，不在本阶段展开 | plan.md、v3.5 选型 |
 | Elasticsearch | 全局搜索只读索引（岗位/企业/技能标签） | **非权威数据源**：MySQL 为唯一事实源，ES 可由 MySQL 重建，不承担溯源职责 | plan.md AD-13、REQ-40 |
@@ -1104,25 +1069,28 @@ erDiagram
 | --- | --- | --- | --- |
 | H-01 | 岗位与招聘需求合模为单实体 job_record | OPEN-04（1:1 等同）+ plan.md JobRecord | ENTITY-14 |
 | H-02 | 重复标记字段化（duplicate_flag + duplicate_of_id），不设唯一约束 | Q3、INV-01 归纳 | TABLE-16、INDEX-04 |
-| H-03 | 岗位族/AI 协同标记字段化于 job_record；**软数智云为企业级标记字段化于 company**（v1.10 修正）；岗位族校正留痕表 | INV-02/04、REQ-11/56 归纳 | TABLE-16/17/18 |
+| H-03 | 岗位族/AI 协同标记字段化于 job_record；**软数智云为企业级标记字段化于 company**（v1.10 修正）；岗位族校正留痕并入质量处理台账（v1.16） | INV-02/04、REQ-11/56 归纳 | TABLE-16/18/44 |
 | H-04 | 企业独立建表，company_name 自然键，导入时自动 upsert | REQ-31/28 归纳 | TABLE-18、REL-06 |
 | H-05 | 月薪双列（原文 + 标准化数值） | REQ-06"月薪缺失或非数值"归纳 | TABLE-16 |
 | H-06 | 字段映射缓存键 = 文件表头签名 | REQ-04"同格式文件"归纳 | TABLE-15 |
 | ~~H-07~~ | **已废止（v1.11）**：参数配置改为 Nacos OpenAPI 维护（不建 sys_param 表）；原"供给数"随 GAP-01 取消 | spec v2.22 REQ-63/74、plan AD-17 | 无表（TABLE-31 废止） |
 | H-08 | 汇总物化表仅作 ≤3s 性能兜底，非本期必建 | NFR-03 + plan.md | §6.5 |
-| H-09 | curriculum_db.std_tag_sync 副本由 TagChanged 事件维护 | Q4 + AC-67"课程对齐同步更新" + 跨库禁 FK 归纳 | TABLE-35、REL-19 |
+| H-09 | curriculum_db.tag_sync（tag_kind=STD）副本由 TagChanged 事件维护 | Q4 + AC-67"课程对齐同步更新" + 跨库禁 FK 归纳 | TABLE-35、REL-19（v1.14） |
 | H-10 | job_record.province 字段（城市→省份标准化）支撑 REQ-12 省级筛选 | REQ-12 归纳 | TABLE-16 |
 | H-11 | 数据质量报告按需生成、不落表（文件落本地磁盘）；质量评分=软件相关岗位数÷**正式表 job_record 全部记录数**×100%（分母不含校验失败/废弃，含重复标记与未打标；1 位小数），数据来源仅导入（v2.22） | REQ-36、C-06 归纳 | 无表 |
 | H-12 | import_task.source_channel 承接导入渠道统计（人工导入/采集任务/手工补录）；不做外部数据源分类（v2.21）；手工补录为单条录入（plan `/records/manual`），**批次数按日聚合**（同一天计 1 个批次、记录数按条数，v2.22 裁决，OPEN-DB-05 关闭） | REQ-36、C-06 归纳 | TABLE-12 |
 | H-13 | sys_account.employee_no 不设唯一约束（工号/统一认证账号仅展示，登录凭证为 account_name） | 用户裁决推论 | TABLE-01、UQ-01 |
-| H-14 | 采集为文件拉取式（TEMPLATE/FILE），无爬虫；采集执行生成导入任务并复用导入链路 | REQ-75 归纳 | TABLE-41/42 |
+| H-14 | 采集为文件拉取式（TEMPLATE/FILE），无爬虫；采集执行生成导入任务并复用导入链路（执行记录并入 import_task，v1.14） | REQ-75 归纳 | TABLE-41/12 |
 | H-15 | 【软数智云】目标企业清单独立建表 target_company，按 company_name 与导入企业匹配计算覆盖率；**清单更新=全量替换，历史版本不留存**（v2.22） | REQ-31、GAP-03 归纳 | TABLE-45 |
-| H-16 | 采集执行记录与质量处理台账以业务编码快照记录（不建跨流程 FK），保障审计可读 | REQ-75/76 归纳 | TABLE-42/44、LR-07/08 |
+| H-16 | 质量处理台账以业务编码快照记录（不建跨流程 FK），保障审计可读；采集执行记录已并入 import_task（v1.14） | REQ-75/76 归纳 | TABLE-44、LR-08 |
 | H-17 | 手工补录记录无导入批次：job_record.task_id 允许 NULL，按 source_channel=MANUAL 标识；批次统计（ASM-09）不含手工补录 | REQ-75、plan `/records/manual` 归纳 | TABLE-16、FK-07 |
 | H-18 | 人才需求预测采用**统计时序模型**（移动平均/指数平滑/线性回归，可组合），结果与元数据落 prediction_result；数据不足不写记录、接口显式"数据不足"；同筛选条件以最新生成时间结果为准 | REQ-72、AC-98 归纳（v1.11） | TABLE-46 |
 | H-19 | **行业分类文件优先**：文件提供则使用；未提供按公司名称匹配 company.industry，匹配不到时在映射确认环节人工确认一次并回写企业；本批 job_record.industry_category 校验时回填。**技能要求不在标准导入字典中**，由 AI 从岗位描述抽取（job_tag 抽取标签）；年龄/语言/职位类型/专业/性别/招聘需求按标准字典原文保留、可空 | REQ-04/05/70 归纳（v2.24） | TABLE-16/18 |
 | H-20 | **权限点与角色授权为代码常量**（不建 permission/role_permission）；**数据范围仅全校/只读汇总/全系统**（不建 account_data_scope，取消“指定专业数据”）；字段映射缓存走 Redis（不建 field_mapping_cache） | REQ-63/04 归纳（v1.12） | TABLE-03/04/05/15（废止） |
 | H-21 | **标准 AI 提示词契约适配**：导入映射输出 `mappingField/databseFieldKey/databseFieldValue/matchType/level/status`（`databse` 为提示词固定拼写），服务端转换为 `MappingViewVO`；建议输出 `recommendedType/level/title/desc/accordingTo`，服务端生成 ADJ-*/状态并映射为 type/priority/description/evidence_source；dataTags/confidence 可选补充 | REQ-04/20 归纳（v1.13） | TABLE-16、TABLE-24 |
+| H-22 | **表数量压缩（方案 B，v1.14）**：role 常量化；login_audit/field_mapping/collect_run/review_progress 分别并入 operation_log/import_task/import_task/adjustment_window；两张标签同步表合并为 tag_sync、两张技能点标签链合并为 skill_point_tag_link | 用户裁决（2026-11-27） | 42→35 表、40→34 实体、22→19 关系；编号留空不重排 |
+| H-23 | **路由策略字段化（C1，v1.15）**：model_route_policy 并入 model_config（route_role/route_trigger_json/route_enabled）；主备唯一性与启停由应用层校验，不改 REQ-68 行为 | 用户裁决（2026-11-27） | 35→34 表、34→33 实体；关系保持 19（REL-17 仍覆盖配额/调用诊断） |
+| H-24 | **表数量三次压缩（C2~C5，v1.16）**：job_family_correction→quality_process_log（CORRECTION 行）；review_opinion→report.review_opinions_json（另补 review_progress_json 承载展示性进度）；annual_key_conclusion→achievement_ledger（item_kind）；tag_pending_item→tag_change_log（SUGGESTION 行） | 用户裁决（2026-11-27） | 34→30 表、33→29 实体、19→17 关系 |
 
 ### 12.2 待确认（OPEN-DB-* 及沿用）
 
@@ -1170,47 +1138,47 @@ erDiagram
 | ENTITY / TABLE | REQ（或依据） |
 | --- | --- |
 | ENTITY-01 / TABLE-01 sys_account | REQ-01/02/63/64、用户裁决（CF-05） |
-| ENTITY-02 / TABLE-02 role | REQ-63 |
+| ~~ENTITY-02 / TABLE-02 role~~ | **已废止（v1.14）**：角色改代码常量，role_code 由 CK-23 校验（REQ-63） |
 | ~~ENTITY-03 / TABLE-03 permission~~ | **已废止（v1.12）**：权限点为代码常量（v2.23） |
 | ~~TABLE-04 role_permission~~ | **已废止（v1.12）**：角色授权常量化 |
 | ~~TABLE-05 account_data_scope~~ | **已废止（v1.12）**：数据范围收敛为全校/只读/全系统 |
 | ENTITY-04 / TABLE-06 operation_log | REQ-24/64 |
-| ENTITY-05 / TABLE-07 login_audit | REQ-24 |
+| ~~ENTITY-05 / TABLE-07 login_audit~~ | **已废止（v1.14）**：并入 TABLE-06 operation_log（log_type=LOGIN，REQ-24） |
 | ENTITY-06 / TABLE-08 model_config | REQ-67 |
-| ENTITY-07 / TABLE-09 model_route_policy | REQ-68 |
+| ~~ENTITY-07 / TABLE-09 model_route_policy~~ | **已废止（v1.15）**：并入 TABLE-08 model_config 路由字段（REQ-68） |
 | ENTITY-08 / TABLE-10 model_quota | REQ-69 |
 | ENTITY-09 / TABLE-11 ai_call_log | INV-07、REQ-10 |
 | ENTITY-10 / TABLE-12 import_task | REQ-03/06/55 |
 | ENTITY-11 / TABLE-13 import_temp_record | REQ-05、INV-08 |
-| ENTITY-12 / TABLE-14 field_mapping | REQ-04 |
+| ~~ENTITY-12 / TABLE-14 field_mapping~~ | **已废止（v1.14）**：并入 TABLE-12 import_task.mapping_json（REQ-04） |
 | ~~ENTITY-13 / TABLE-15 field_mapping_cache~~ | **已废止（v1.12）**：映射缓存走 Redis（REQ-04） |
 | ENTITY-14 / TABLE-16 job_record | REQ-05/06/09/11/30/56/75、INV-01/02/04/09、用户裁决（岗位属性扩展） |
-| ENTITY-29 / TABLE-17 job_family_correction | REQ-11、AC-13 |
+| ~~ENTITY-29 / TABLE-17 job_family_correction~~ | **已废止（v1.16）**：并入 TABLE-44 quality_process_log（CORRECTION 行，REQ-11、AC-13） |
 | ENTITY-15 / TABLE-18 company | REQ-28/31/56 |
 | ENTITY-16 / TABLE-19 job_tag | REQ-08/09、INV-03 |
 | ENTITY-17 / TABLE-20 std_skill_tag | REQ-07 |
 | ENTITY-18 / TABLE-21 tag_mapping | REQ-08 |
 | ENTITY-19 / TABLE-22 tag_change_log | REQ-07、AC-67 |
-| ENTITY-20 / TABLE-23 tag_pending_item | REQ-07 |
+| ~~ENTITY-20 / TABLE-23 tag_pending_item~~ | **已废止（v1.16）**：并入 TABLE-22 tag_change_log（SUGGESTION 行，REQ-07） |
 | ENTITY-21 / TABLE-24 adjustment_suggestion | REQ-19/20/21/44/47/48、INV-05 |
 | ENTITY-22 / TABLE-25 adjustment_window | REQ-49 |
-| ENTITY-23 / TABLE-26 review_progress | REQ-49 |
+| ~~ENTITY-23 / TABLE-26 review_progress~~ | **已废止（v1.14）**：并入 TABLE-25 adjustment_window.review_stages_json（REQ-49） |
 | ENTITY-24 / TABLE-27 report | REQ-26/58 |
-| ENTITY-25 / TABLE-28 review_opinion | REQ-61 |
+| ~~ENTITY-25 / TABLE-28 review_opinion~~ | **已废止（v1.16）**：并入 TABLE-27 report.review_opinions_json（REQ-61、AC-63） |
 | ENTITY-26 / TABLE-29 achievement_ledger | REQ-62 |
-| ENTITY-27 / TABLE-30 annual_key_conclusion | REQ-59 |
+| ~~ENTITY-27 / TABLE-30 annual_key_conclusion~~ | **已废止（v1.16）**：并入 TABLE-29 achievement_ledger（item_kind=CONCLUSION，REQ-59） |
 | ~~ENTITY-28 / TABLE-31 sys_param~~ | **已废止（v1.11）**：参数走 Nacos，不建表（AD-17） |
 | ENTITY-30 / TABLE-32 course_system | REQ-16 |
 | ENTITY-31 / TABLE-33 course | REQ-17 |
 | ENTITY-32 / TABLE-34 skill_point | REQ-18 |
-| ENTITY-33 / TABLE-35 std_tag_sync | REQ-07/18（H-09、AC-67） |
-| ENTITY-34 / TABLE-36 industry_tag_sync | REQ-53 |
-| TABLE-37 skill_point_std_tag_link | REQ-18、Q4 |
-| TABLE-38 skill_point_industry_tag_link | REQ-52/53、Q4 |
+| ENTITY-33 / TABLE-35 tag_sync（标准/产业副本） | REQ-07/18/53（H-09、AC-67，v1.14 合并） |
+| ~~ENTITY-34 / TABLE-36 industry_tag_sync~~ | **已废止（v1.14）**：并入 TABLE-35（tag_kind=INDUSTRY） |
+| TABLE-37 skill_point_tag_link（标准/产业链） | REQ-18/52/53、Q4（v1.14 合并） |
+| ~~TABLE-38 skill_point_industry_tag_link~~ | **已废止（v1.14）**：并入 TABLE-37 |
 | ENTITY-35 / TABLE-39 course_change_log | REQ-16/17 |
 | ENTITY-36 / TABLE-40 update_hint | REQ-54、ASM-16 |
 | ENTITY-37 / TABLE-41 collect_task | REQ-75、AC-93 |
-| ENTITY-38 / TABLE-42 collect_run | REQ-75、AC-93 |
+| ~~ENTITY-38 / TABLE-42 collect_run~~ | **已废止（v1.14）**：执行记录并入 TABLE-12（REQ-75、AC-93） |
 | ENTITY-39 / TABLE-43 clean_rule | REQ-76、AC-94 |
 | ENTITY-40 / TABLE-44 quality_process_log | REQ-76、AC-94 |
 | ENTITY-41 / TABLE-45 target_company | REQ-31、GAP-03 |
@@ -1221,7 +1189,7 @@ erDiagram
 
 | REL | REQ（或依据） |
 | --- | --- |
-| REL-01 | REQ-02/63 |
+| ~~REL-01~~ | **已废止（v1.14）**：角色常量化，改 CK-23 校验 |
 | REL-02 | REQ-63 |
 | REL-03 | REQ-63（归纳） |
 | REL-04 | REQ-06、ASM-09 |
@@ -1233,26 +1201,26 @@ erDiagram
 | REL-10 | INV-01、Q3 |
 | REL-11 | REQ-16/17 |
 | REL-12 | REQ-17/18 |
-| REL-13 | REQ-18、Q4 |
-| REL-14 | REQ-52/53、Q4 |
+| REL-13 | REQ-18/52/53、Q4（v1.14 合并标准/产业链） |
+| ~~REL-14~~ | **已废止（v1.14）**：并入 REL-13（tag_kind=INDUSTRY） |
 | REL-15 | REQ-19 |
-| REL-16 | REQ-61 |
-| REL-17 | REQ-67/68/69 |
-| REL-18 | REQ-11、AC-13 |
+| ~~REL-16~~ | **已废止（v1.16）**：评审意见并入 report.review_opinions_json |
+| REL-17 | REQ-67/68/69（v1.15 路由字段并入主表） |
+| ~~REL-18~~ | **已废止（v1.16）**：校正留痕并入 quality_process_log（FK-29） |
 | REL-19 | REQ-07、AC-67（H-09） |
 | REL-20 | REQ-53 |
 | REL-21 | REQ-74、AC-92 |
-| REL-22 | REQ-75、AC-93 |
-| REL-23 | REQ-75、AC-93（LR-07） |
+| REL-22 | REQ-75、AC-93（v1.14 执行记录并入任务表） |
+| ~~REL-23~~ | **已废止（v1.14）**：执行记录已并入 import_task |
 | REL-24 | REQ-76、AC-94（LR-08） |
 
 ### 13.3 CONSTRAINT-* → 来源
 
-约束映射见 §7 全表（UQ-01~12（UQ-03/UQ-08 已废止）、FK-01~28（FK-02/03/04 已废止）、LR-01~08、CK-01~22、BR-01~11），每项均已标注来源（REQ/INV/Q 裁决/归纳/假设）。主键约束：§7.1（归纳）。
+约束映射见 §7 全表（UQ-01~13（UQ-03/UQ-08 已废止）、FK-01~29（FK-01/02/03/04/06/09/14/15/18/19/24/25 已废止）、LR-01~08（LR-07 已废止）、CK-01~29、BR-01~11），每项均已标注来源（REQ/INV/Q 裁决/归纳/假设）。主键约束：§7.1（归纳）。
 
 ### 13.4 INDEX-* → 来源
 
-索引映射见 §6.5 全表（INDEX-01~41），每条标注查询路径编号（P-01~P-12，用户裁决 Q7）与 REQ 来源；未覆盖查询路径不建索引（Q7 约束）。
+索引映射见 §6.5 全表（INDEX-01~43，INDEX-10 已废止），每条标注查询路径编号（P-01~P-12，用户裁决 Q7）与 REQ 来源；未覆盖查询路径不建索引（Q7 约束）。
 
 ### 13.5 ENTITY-* / REL-* → 风险 / 假设 / 待确认
 
@@ -1260,13 +1228,12 @@ erDiagram
 | --- | --- |
 | ENTITY-14 job_record | H-01/02/03/05/10/17/19/21、R-DB-03、R-DB-04 |
 | ENTITY-15 company | H-04、H-19、CK-16（软数智云企业级标记，v1.10） |
-| ENTITY-12 字段映射 | H-06、R-03（spec）；**ENTITY-13 字段映射缓存已废止（v1.12，走 Redis）** |
+| ~~ENTITY-12 字段映射~~ | **已废止（v1.14）**：并入 ENTITY-10 import_task.mapping_json；ENTITY-13 字段映射缓存已废止（v1.12，走 Redis） |
 | ~~ENTITY-28 sys_param~~ | **已废止（v1.11）**：参数走 Nacos（AD-17），无表 |
-| ENTITY-33 std_tag_sync | H-09、R-DB-02 |
-| ENTITY-34 industry_tag_sync | R-DB-02、LR-04 |
+| ENTITY-33 tag_sync | H-09、R-DB-02（v1.14 合并标准/产业副本；原 ENTITY-34 已废止） |
 | ENTITY-21 adjustment_suggestion | LR-01、R-DB-01、R-06（spec）、H-21 |
 | ENTITY-36 update_hint | R-DB-01（LR-02） |
-| ENTITY-37/38 采集任务/执行记录 | H-14、H-16、LR-07 |
+| ENTITY-37 采集任务 / ENTITY-10 导入任务（采集字段） | H-14、H-16（v1.14 执行记录并入任务表） |
 | ENTITY-39/40 清洗规则/质量处理台账 | H-16、LR-08 |
 | ENTITY-41 target_company | H-15（全量替换，v2.22） |
 | ENTITY-42 key_operation_approval | REQ-74（复核人≠提交人应用层强制） |
@@ -1285,3 +1252,6 @@ erDiagram
 3. 若需"课程体系从现有版本复制创建"，先修订 spec REQ-16 再扩展建模（CF-04）。
 4. ~~spec REQ-02"账号标识=工号/统一认证账号"及"创建时不含独立账号字段"需同步为：登录凭证=account_name（唯一，含密码字段），工号/统一认证账号仅做展示（CF-05，用户裁决 2026-11-24）。~~ **已完成（2026-11-26）**：spec REQ-02 已同步至 v2.5（含密码创建入口=系统设置→新建系统账户，用户裁决 2026-11-26）。
 5. 本次 v1.13 已按 spec v2.24 / plan v3.21 完成标准提示词对齐核对（job_record 新增 6 个标准附加字段、字段别名适配、建议类型 COURSE_CONTENT、H-21）；剩余 OPEN-DB-01（MySQL minor 版本）待部署环境确定，NFR-01 宣传口径保留待复核（不阻塞）。
+6. 本次 v1.14 的表数量压缩（方案 B，42→35）为**用户裁决**，仅调整物理承载（合并/常量化），不改变 REQ/AC 的业务行为；spec/plan 无需修订，编码前以本版 db-design 为准。
+7. 本次 v1.15 的二次压缩（C1，35→34，`model_route_policy` 并入 `model_config`）同为**用户裁决**；REQ-68/AC-70 行为不变，spec/plan 无需修订。
+8. 本次 v1.16 的三次压缩（C2~C5，34→30）同为**用户裁决**；AC-13/63/61/64/07 行为不变（专家评审仍为展示性、不做流程引擎），spec/plan 无需修订。
